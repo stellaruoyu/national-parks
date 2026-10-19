@@ -1,54 +1,24 @@
-# Map Rubric — ✅ CHOSEN: Option A (The Scorecard)
+# First-visit park map rubric
 
-Picked by the user on 2026-10-12, with two added requirements:
-- **R5. Legend symbols on markers:** every viewpoint (and every other marked spot) shows its legend symbol right on the map marker itself.
-- **R6. Scrollable map:** the map must be scrollable/zoomable (drag to move, scroll or pinch to zoom).
+## Who and when
 
-## How scoring works
-Rate each design 1–5 on the four rows below, plus check R5 and R6 as pass/fail. Highest total wins.
+For first-time visitors planning a day trip with family or friends. Used at home to choose stops, then on a phone at the park to understand what comes next.
 
----
+## Score each park out of 20
 
-## Option A: The Scorecard ⭐ (simplest)
+| Criterion | Points | Full marks require |
+|---|---:|---|
+| Find things quickly | /5 | Entrances, camps, sights, and visitor centers are easy to find on a phone. Search and filters help; labels remain readable. |
+| Choose a realistic visit | /5 | Visit time and walking effort for each stop. Suggested trips connect stops in a sensible order and include estimated driving time. |
+| Trust the information | /5 | Connections follow the official map. Roads, trails, and rough access are distinguished. Sources and date checked are visible. Current conditions are one tap away. Estimates are identified. |
+| Comfortable and appealing to use | /5 | Welcoming appearance, clear symbols, readable text, touch-sized controls, keyboard access, and useful small-screen behavior. |
+| **Total** | **/20** | Include one honest weakness per park. |
 
-Rate each design 1–5 on four things. Highest total wins.
+## Required checks, separate from the score
 
-| | Design 1 | Design 2 |
-|---|---|---|
-| 🧭 Easy to read (I find things fast) | /5 | /5 |
-| ✅ Has what I need (nothing important missing) | /5 | /5 |
-| 🎨 Looks good (I'd show it to a friend) | /5 | /5 |
-| 🗣️ I could explain it to someone else | /5 | /5 |
-| **Total** | /20 | /20 |
+- **R5 — Symbols:** Every marked place carries its category's legend symbol on the marker itself. Use symbols and words, not color alone.
+- **R6 — Explore comfortably:** Every place and name can be reached on a phone. Provide drag-to-pan, wheel/pinch zoom, zoom buttons, reset, and a searchable place list.
+- **R7 — Connected maps:** Each park has one continuous map, not disconnected quadrant drawings. Every place connects to the access network by a road or marked trail. Include external access roads where needed, such as Joshua Tree's Black Rock and Indian Cove; never invent a through-road to join places. Both parks link from shared navigation, and switching parks preserves saved stops.
+- **R8 — Useful planning:** Include entrances/access routes and campgrounds. Show walking effort, visit time, and estimated travel between planned stops. Date known closures and link their source; static notes must never appear live.
 
-*Plus: one honest weakness per design.*
-
-## Option B: The Detective Table 🔍 (most thorough)
-
-Check each design against every row. ✅ = yes, ❌ = no.
-
-| Check | Must-have? | Design 1 | Design 2 |
-|---|---|---|---|
-| All 3 park entrances marked | Yes | | |
-| Campgrounds marked | Yes | | |
-| Famous spots labeled (Skull Rock, etc.) | Yes | | |
-| Works on a phone screen | Yes | | |
-| No confusing words | Yes | | |
-| Looks nice | Nice-to-have | | |
-
-*Rule: a design must pass every "Yes" row to win. Ties broken by nice-to-haves.*
-
-## Option C: The 10-Second Checklist ⚡ (fastest)
-
-A design passes only if you can answer YES to all of these:
-
-- [ ] I can find the park entrances in under 10 seconds
-- [ ] I can point to where I'd camp
-- [ ] I know what the symbols mean without a legend hunt
-- [ ] It doesn't look boring
-
-*If any box is unchecked, the design goes back for one more round.*
-
----
-
-**Your turn:** which one — A, B, or C? (Or tell me your own mix.)
+A map with a failed required check still gets its /20 score but is not ready for release. These are planning guides: use the official NPS map and current conditions for navigation, weather, closures, and camping availability on the actual travel date.
