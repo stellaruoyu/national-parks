@@ -4,7 +4,7 @@ Connected Joshua Tree and Death Valley planning maps for first-time visitors cho
 
 ## Open the maps
 
-Open `national-park-maps.html` in a browser, with `maps.css`, `parks.js`, and `maps.js` in the same folder. No build or package installation is needed. For a local web preview:
+Open `national-park-maps.html` in a browser, with `maps.css`, `parks.js`, `planning.js`, and `maps.js` in the same folder. No build or package installation is needed. For a local web preview:
 
 ```sh
 python -m http.server 8766 --bind 127.0.0.1
@@ -16,9 +16,9 @@ Then open `http://127.0.0.1:8766/`. Direct park links use `national-park-maps.ht
 
 - One continuous access network per park: 30 Joshua Tree places and 24 Death Valley places.
 - Roads, unpaved access, and walking connections have distinct line styles. Black Rock and Indian Cove connect through the outside highway; Artist’s Drive runs in the correct one-way direction.
-- Category symbols on every marker, search, filters, collision-aware labels, and a place list.
+- Category symbols on every marker, search, quick entrance/campground filters, collision-aware labels, area zoom shortcuts, and a place list. Busy markers spread apart with leader lines to their map positions so phone tap targets do not overlap.
 - Drag, wheel/pinch zoom, zoom buttons, reset, keyboard controls (arrows, +/−, 0), and an expanded map view (Escape closes it).
-- Three suggested itineraries per park; add, remove, and reorder stops. Route highlighting and estimated drive/visit totals follow the access network.
+- Three suggested itineraries per park; add, remove, and reorder stops. Route highlighting follows the access network. Driving allowances have a 30% upper buffer, and day totals include a selected break allowance and an upper allowance for time at stops. Choose a 4/6/8/10-hour day to see whether the plan fits. These are editorial ranges, not sourced traffic predictions or statistical confidence intervals.
 - Separate saved plans for both parks, stored on the current device when browser storage is available. Print/save using the browser’s print dialog.
 - NPS source links, walking effort, visit allowances, and dated condition notes.
 
@@ -32,11 +32,13 @@ Run the data/connectivity checks with Node.js:
 node --test tests/parks.test.cjs
 ```
 
-Sources were checked October 18, 2026. NPS conditions can change. Use current NPS information and official maps for navigation and campsite availability.
+Sources were checked October 19, 2026. Known closures are visible in the place cards and cannot be newly added to a plan. Older saved plans containing a closed stop are flagged. NPS conditions can change. Use current NPS information and official maps for navigation and campsite availability.
 
 ## Honest limitations
 
-- Joshua Tree: the central boulder area is dense at whole-park scale; zoom or use the searchable list to inspect individual stops.
-- Death Valley: the distances are large and conditions change; the simplified map and static drive allowances cannot replace navigation or a same-day road check.
+- Joshua Tree: some labels yield to others at whole-park scale. The area shortcuts and searchable list provide access to every name; the map remains continuous.
+- Death Valley: static time ranges help plan a day, but they cannot account for a new closure or current traffic. Use the linked official map for actual distances and check conditions for the travel date.
+
+See `REVIEW.md` for the rubric assessment and verification record.
 
 The `codex` branch contains this redesign; the original design remains in the `main` branch history.

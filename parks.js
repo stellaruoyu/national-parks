@@ -92,5 +92,18 @@ globalThis.PARKS = (() => {
     oneWay:[['artistSouth','artists'],['artists','artistNorth']],
     presets:[{id:'classic',name:'First visit · salt & badlands',desc:'Enter on CA-190 from Death Valley Junction, get oriented at Furnace Creek, visit Badwater, take the one-way Artist’s Drive loop, and leave east.',stops:['east','furnace','badwater','artists','zabriskie','east']},{id:'short',name:'Short day · Furnace Creek highlights',desc:'A compact out-and-back from the eastern approach: a visitor center, nearby history, and the badlands overlook.',stops:['east','zabriskie','furnace','harmony','east']},{id:'dunes',name:'Full day · the valley & dunes',desc:'Add the Stovepipe Wells area to a Furnace Creek visit. Drive time adds up; allow extra daylight and breaks.',stops:['east','zabriskie','furnace','dunes','east']}]
   };
+  jt.regions=[{name:'Whole park',box:[0,0,1200]},{name:'Boulders & main sights',box:[290,290,780]},{name:'Entrances & north camps',box:[20,70,1180]},{name:'Cottonwood & Cholla',box:[790,700,470]}];
+  dv.regions=[{name:'Whole park',box:[0,0,1200]},{name:'Furnace Creek & Badwater',box:[600,600,600]},{name:'Dunes & western approach',box:[30,370,850]},{name:'Ubehebe & the north',box:[300,0,650]}];
+  // Status is a source snapshot. Never infer that an unflagged place is open.
+  for(const park of [jt,dv]){
+    park.checked='October 19, 2026';
+    for(const place of park.places)place.source=place.cat==='campground'?park.sources.camping:['trail','viewpoint','sight'].includes(place.cat)?park.sources.hikes:park.sources.map;
+  }
+  for(const id of ['north','texas','stovepipeCamp']){
+    const place=dv.places.find(p=>p.id===id);place.status='closed';place.statusLabel='Closed in Oct 19 NPS snapshot';place.statusSource=dv.sources.conditions;
+    place.note=place.note.replaceAll('Oct 18','Oct 19');
+  }
+  dv.condition=dv.condition.replace('Oct 18','Oct 19');
+  jt.places.find(p=>p.id==='heart').requiresVisit=['arch'];
   return {'joshua-tree':jt,'death-valley':dv};
 })();

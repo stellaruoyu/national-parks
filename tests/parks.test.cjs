@@ -5,6 +5,7 @@ const vm = require('node:vm');
 const context = vm.createContext({});
 vm.runInContext(fs.readFileSync(require('node:path').join(__dirname, '../parks.js'), 'utf8'), context);
 const parks = context.PARKS;
+const planning = require('../planning.js');
 
 function reachable(park, start, respectClosures = false) {
   const graph = {};
@@ -71,4 +72,40 @@ test('Death Valley: Artist’s Drive is directed south to north, never a reverse
   assert.ok(park.oneWay.some(([a,b])=>a==='artistSouth'&&b==='artists'));
   assert.ok(park.oneWay.some(([a,b])=>a==='artists'&&b==='artistNorth'));
   assert.equal(park.edges.some(([a,b])=>a==='artists'&&b==='artistSouth'), false);
+});
+
+test('Actual routing takes the long way around the one-way Artist’s Drive loop',()=>{
+  const park=parks['death-valley'];
+  const out=planning.path(park,'artists','artistSouth');
+  assert.ok(out);
+  const first=park.edges[out.edges[0]];
+  assert.equal(first[0],'artists');assert.equal(first[1],'artistNorth');
+  assert.ok(out.drive>planning.path(park,'artistSouth','artists').drive);
+  assert.equal(planning.path(park,'east','north'),null);
+});
+test('Timing includes breaks and uncertainty; empty plans cost zero minutes',()=>{
+  const park=parks['death-valley'],stops=['east','furnace','badwater','east'];
+  const a=planning.estimate(park,stops,30),b=planning.estimate(park,stops,60);
+  assert.ok(a.high>a.low);assert.equal(b.low-a.low,30);assert.equal(b.high-a.high,30);
+  assert.ok(a.driveHigh>=a.drive);assert.ok(a.driveLow<=a.drive);
+  assert.equal(planning.estimate(park,[],45).high,0);
+});
+test('Heart Rock includes its Arch Rock approach exactly once',()=>{
+  const park=parks['joshua-tree'];
+  assert.equal(planning.estimate(park,['heart'],45).visit,80);
+  assert.equal(planning.estimate(park,['arch','heart'],45).visit,80);
+  assert.equal(planning.estimate(park,['ryanTrail','ryanSummit'],45).visit,180);
+});
+test('Closed campgrounds invalidate old saved trips without breaking the map',()=>{
+  const park=parks['death-valley'];
+  assert.ok(planning.path(park,'east','texas'));
+  assert.equal(planning.estimate(park,['east','texas','east'],45).unavailable,true);
+  assert.equal(planning.estimate(park,park.presets[0].stops,45).unavailable,false);
+});
+test('All area shortcuts stay on the connected map and all places link to a source',()=>{
+  for(const park of Object.values(parks)){
+    assert.ok(park.regions.length>=4);
+    for(const p of park.places)assert.match(p.source,/^https:\/\/www\.nps\.gov\//);
+    for(const p of park.places.filter(p=>p.status==='closed'))assert.ok(p.statusLabel&&p.statusSource);
+  }
 });

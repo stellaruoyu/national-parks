@@ -11,58 +11,35 @@
   const el=(tag,attrs={},content)=>{const n=document.createElementNS(NS,tag);for(const [k,v]of Object.entries(attrs))n.setAttribute(k,v);if(content!==undefined)n.textContent=content;return n;};
   const find=id=>park.places.find(p=>p.id===id);
   const coords=id=>park.junctions[id]||[find(id).x,find(id).y];
-  const edgeKey=(a,b)=>`${a}:${b}`;
   const same=(pair,a,b)=>pair[0]===a&&pair[1]===b;
-  function graph(){
-    const result={};
-    park.edges.forEach((edge,i)=>{
-      const [a,b,minutes,type]=edge;
-      if(park.closedEdges?.some(e=>same(e,a,b)||same(e,b,a)))return;
-      (result[a]??=[]).push({to:b,minutes,type,i});
-      if(!park.oneWay?.some(e=>same(e,a,b)))(result[b]??=[]).push({to:a,minutes,type,i});
-    });
-    return result;
-  }
-  function path(from,to){
-    if(from===to)return {edges:[],drive:0,walk:0};
-    const g=graph(),dist={[from]:0},previous={},queue=new Set(Object.keys(g));
-    while(queue.size){
-      let current=null;for(const id of queue)if(current===null||(dist[id]??Infinity)<(dist[current]??Infinity))current=id;
-      if(!Number.isFinite(dist[current]))break;
-      queue.delete(current);if(current===to)break;
-      for(const e of g[current]||[]){const cost=dist[current]+e.minutes;if(cost<(dist[e.to]??Infinity)){dist[e.to]=cost;previous[e.to]={from:current,...e};}}
-    }
-    if(!previous[to])return null;
-    const edges=[];let cursor=to,drive=0,walk=0;
-    while(cursor!==from){const e=previous[cursor];edges.unshift(e.i);if(e.type==='trail')walk+=e.minutes;else drive+=e.minutes;cursor=e.from;}
-    return {edges,drive,walk};
-  }
+  const range=(low,high)=>low===high?duration(low):`${duration(low)}–${duration(high)}`;
   function plan(){return plans[key];}
   function persist(){try{localStorage.setItem(STORE,JSON.stringify(plans));storageOK=true;}catch{storageOK=false;}text('save-status',storageOK?'Your stops are saved on this device.':'Stops stay available this session; device storage is unavailable.');}
   function routeChanged(){plan().preset='custom';persist();renderPlan();renderPlaces();renderDetail();drawMap();}
-  function toggleStop(id){if(plan().stops.includes(id))plan().stops=plan().stops.filter(s=>s!==id);else plan().stops.push(id);routeChanged();}
+  function toggleStop(id){const control=document.activeElement,fromCard=control?.dataset.add===id,fromDetail=control?.id==='detail-add';if(plan().stops.includes(id))plan().stops=plan().stops.filter(s=>s!==id);else if(find(id).status!=='closed')plan().stops.push(id);routeChanged();if(fromCard)document.querySelector(`[data-add="${id}"]`)?.focus({preventScroll:true});else if(fromDetail)$('detail-add').focus({preventScroll:true});}
   function renderPlan(){
     const current=plan(),preset=park.presets.find(p=>p.id===current.preset);
     $('route-choice').innerHTML=park.presets.map(p=>`<option value="${p.id}">${escape(p.name)}</option>`).join('')+'<option value="custom">My own stops</option>';
     $('route-choice').value=preset?preset.id:'custom';
     text('route-description',preset?preset.desc:'Stops are visited in the order below. Move them up or down to adjust your route; include your arrival and departure access points.');
-    activeRoute=new Set();let driving=0,unreachable=false,walking=false;
-    const legs=current.stops.map((id,i)=>{
-      if(!i)return null;
-      const leg=path(current.stops[i-1],id);if(!leg){unreachable=true;return null;}
-      driving+=leg.drive;walking ||=leg.walk>0;leg.edges.forEach(e=>activeRoute.add(e));return leg;
-    });
-    const visiting=current.stops.reduce((sum,id)=>sum+find(id).visit,0);
-    $('trip-totals').innerHTML=`<div><strong>${unreachable?'—':duration(driving)}</strong><span>estimated driving</span></div><div><strong>${duration(visiting)}</strong><span>time at stops, including walks</span></div><p>${current.stops.length?`${current.stops.length} stops · ${unreachable?'Route includes unavailable access.':`about ${duration(driving+visiting)} before breaks and queues.`}`:'Add places below to begin your day.'}</p>`;
-    $('trip-stops').innerHTML=current.stops.map((id,i)=>{const p=find(id),leg=legs[i];return `<li><div class="trip-stop-head"><span class="stop-number">${i+1}</span><button class="stop-link" data-select="${id}">${escape(p.name)}</button></div><p class="stop-time">${i?(leg?`~${duration(leg.drive)} drive${leg.walk?' + walk access':''} from previous stop`:'No available road connection'):'Start here'} · ${p.visit?`~${duration(p.visit)} visit`:'access point'}</p><div class="stop-tools"><button data-up="${i}" aria-label="Move ${escape(p.name)} up" ${i===0?'disabled':''}>↑</button><button data-down="${i}" aria-label="Move ${escape(p.name)} down" ${i===current.stops.length-1?'disabled':''}>↓</button><button data-remove="${i}" aria-label="Remove ${escape(p.name)}">Remove</button></div></li>`;}).join('');
+    const result=ParkPlanning.estimate(park,current.stops,current.breaks),{legs,unavailable:unreachable}=result;
+    activeRoute=new Set(legs.flatMap(leg=>leg?.edges||[]));
+    $('trip-totals').innerHTML=`<div><strong>${unreachable?'—':range(result.driveLow,result.driveHigh)}</strong><span>driving allowance</span></div><div><strong>${duration(result.visit)}</strong><span>visits &amp; walks, before breaks</span></div><p>${current.stops.length?`${current.stops.length} stops · ${unreachable?'Remove closed or disconnected stops.':`${range(result.low,result.high)} total, including ${duration(current.breaks)} for breaks.`}`:'Add places below to begin your day.'}</p>`;
+    const budget=$('budget-status');budget.className='budget-status';
+    if(unreachable){budget.textContent='This route includes unavailable access. Check the marked stops.';budget.classList.add('over');}
+    else if(!current.stops.length)budget.textContent='Choose a route or add a few places to start.';
+    else if(result.high>current.budget){budget.textContent=`Allow up to ${duration(result.high)}. That exceeds your ${duration(current.budget)} day; remove a stop or allow longer.`;budget.classList.add('over');}
+    else budget.textContent=`Fits your ${duration(current.budget)} day, with about ${duration(current.budget-result.high)} to spare at the upper estimate.`;
+    $('trip-stops').innerHTML=current.stops.map((id,i)=>{const p=find(id),leg=legs[i];return `<li><div class="trip-stop-head"><span class="stop-number">${i+1}</span><button class="stop-link" data-select="${id}">${escape(p.name)}</button></div><p class="stop-time">${i?(leg?`~${range(Math.floor(leg.drive/5)*5,Math.ceil(leg.drive*1.3/5)*5)} drive${leg.walk?' + walk access':''} from previous stop`:'No available road connection'):'Start here'} · ${p.visit?`~${duration(p.visit)} visit`:'access point'}</p>${p.note?`<details class="stop-context"><summary>${p.status==='closed'?'Closed — see NPS note':p.cat==='campground'?'Camping & access note':'Visit & access note'}</summary><p>${escape(p.note)}</p><a href="${p.statusSource||p.source}" target="_blank" rel="noopener">Check NPS ↗</a></details>`:''}<div class="stop-tools"><button data-up="${i}" aria-label="Move ${escape(p.name)} up" ${i===0?'disabled':''}>↑</button><button data-down="${i}" aria-label="Move ${escape(p.name)} down" ${i===current.stops.length-1?'disabled':''}>↓</button><button data-remove="${i}" aria-label="Remove ${escape(p.name)}">Remove</button></div></li>`;}).join('');
     const notes=[];
     if(unreachable)notes.push('A selected access road is closed in the source snapshot. Remove that stop and check NPS.');
     if(current.stops.some(id=>id==='racetrack'))notes.push('Racetrack is a separate remote excursion, not a quick add-on to a day trip.');
     if(current.stops.some(id=>find(id).cat==='campground'))notes.push('Camp visits are scouting time only; overnight stays and reservations are not included.');
-    if(key==='death-valley'&&current.stops.some(id=>id==='texas'||id==='stovepipeCamp'))notes.push('Seasonal campground closure in the Oct 18 snapshot: check the selected campground’s NPS details before planning a stay.');
-    if(walking)notes.push('Trail access is included in each stop’s visit allowance, not in the driving total.');
-    if(driving+visiting>480)notes.push('This is a long day. Consider removing a stop or splitting the trip.');
-    notes.push('Drive estimates follow the shown access network; check the official map for your actual journey.');
+    if(key==='death-valley'&&current.stops.some(id=>id==='texas'||id==='stovepipeCamp'))notes.push('Seasonal campground closure in the Oct 19 snapshot: check the selected campground’s NPS details before planning a stay.');
+    if(result.implicit.length)notes.push(`Includes ${result.implicit.map(id=>find(id).name).join(', ')} access time so the approach walk is not forgotten.`);
+    if(current.stops.length&&find(current.stops[0]).cat!=='entrance')notes.push('Your arrival drive is not included: start with an entrance or access point.');
+    if(current.stops.length&&find(current.stops.at(-1)).cat!=='entrance')notes.push('Your departure drive is not included: end with an entrance or access point.');
+    notes.push('Drive times are editorial allowances with a 30% upper buffer, not measured or live traffic times. Check the official NPS map for actual distances.');
     text('trip-note',notes.join(' '));
     $('trip-stops').querySelectorAll('[data-select]').forEach(b=>b.onclick=()=>select(b.dataset.select,true));
     $('trip-stops').querySelectorAll('[data-remove]').forEach(b=>b.onclick=()=>{current.stops.splice(Number(b.dataset.remove),1);routeChanged();});
@@ -70,7 +47,7 @@
   }
   function renderDetail(){
     const p=find(selected),c=CATS[p.cat],saved=plan().stops.includes(p.id);
-    $('place-detail').innerHTML=`<div class="detail-top"><div><p class="detail-type">${c.symbol} ${escape(c.name)}</p><h3 id="detail-title">${escape(p.name)}</h3></div><button type="button" id="detail-add" class="primary ${saved?'saved':''}">${saved?'✓ In your day':'+ Add to my day'}</button></div><div class="metrics"><span>${p.visit?`~${duration(p.visit)} visit`:'Arrival / departure'}</span><span>${escape(p.effort)}</span><span>${escape(p.road)}</span></div><p>${escape(p.desc)}</p>${p.note?`<p class="access-note">${escape(p.note)}</p>`:''}<a class="source" target="_blank" rel="noopener" href="${p.cat==='campground'?park.sources.camping:park.sources.hikes}">NPS ${p.cat==='campground'?'camping':'visitor'} information ↗</a>`;
+    $('place-detail').innerHTML=`<div class="detail-top"><div><p class="detail-type">${c.symbol} ${escape(c.name)}</p><h3 id="detail-title">${escape(p.name)}</h3></div><button type="button" id="detail-add" class="primary ${saved?'saved':''}" ${p.status==='closed'&&!saved?'disabled':''}>${saved?'✓ In your day':p.status==='closed'?'Closed in NPS snapshot':'+ Add to my day'}</button></div><div class="metrics"><span>${p.visit?`~${duration(p.visit)} visit`:'Arrival / departure'}</span><span>${escape(p.effort)}</span><span>${escape(p.road)}</span></div><p>${escape(p.desc)}</p>${p.note?`<p class="access-note">${escape(p.note)}</p>`:''}<a class="source" target="_blank" rel="noopener" href="${p.statusSource||p.source}">NPS ${p.status==='closed'?'closure':p.cat==='campground'?'camping':'visitor'} information ↗</a><p class="small">Checked ${park.checked}. Visit allowances include walking; driving allowances are estimated separately.</p>`;
     $('detail-add').onclick=()=>toggleStop(p.id);
   }
   function select(id,focusMap=false){
@@ -78,14 +55,15 @@
     if(focusMap){const p=find(id);camera={x:p.x-220,y:p.y-200,w:440,h:400};updateCamera();$('map-frame').scrollIntoView({block:'center',behavior:'auto'});svg.focus({preventScroll:true});}
   }
   function renderLegend(){
+    $('quick-filter').value=visible.size===Object.keys(CATS).length?'all':visible.size===1?[...visible][0]:'custom';
     $('legend').innerHTML=Object.entries(CATS).map(([id,c])=>`<button type="button" data-category="${id}" aria-pressed="${visible.has(id)}"><span class="legend-symbol" aria-hidden="true">${c.symbol}</span>${c.name} <span>(${park.places.filter(p=>p.cat===id).length})</span></button>`).join('');
-    $('legend').querySelectorAll('button').forEach(b=>b.onclick=()=>{const id=b.dataset.category;visible.has(id)?visible.delete(id):visible.add(id);renderLegend();renderPlaces();drawMap();});
+    $('legend').querySelectorAll('button').forEach(b=>b.onclick=()=>{const id=b.dataset.category;visible.has(id)?visible.delete(id):visible.add(id);renderLegend();renderPlaces();drawMap();document.querySelector(`[data-category="${id}"]`).focus({preventScroll:true});});
   }
   function renderPlaces(){
     const query=$('search').value.trim().toLowerCase();
     const places=park.places.filter(p=>visible.has(p.cat)&&`${p.name} ${p.road} ${p.effort}`.toLowerCase().includes(query));
     text('result-count',`${places.length} of ${park.places.length} places · filters affect the map and this list`);
-    $('place-list').innerHTML=places.length?places.map(p=>`<article class="place-card"><p class="detail-type">${CATS[p.cat].symbol} ${escape(CATS[p.cat].name)}</p><h3>${escape(p.name)}</h3><p class="card-meta">${p.visit?`~${duration(p.visit)}`:'Access point'} · ${escape(p.effort)}</p><p>${escape(p.desc)}</p><div class="card-actions"><button class="quiet" data-view="${p.id}">Find on map ↗</button><button class="quiet ${plan().stops.includes(p.id)?'saved':''}" data-add="${p.id}">${plan().stops.includes(p.id)?'✓ Saved':'+ Add stop'}</button></div></article>`).join(''):'<p class="muted">No matching places. Try a different name or turn a category back on.</p>';
+    $('place-list').innerHTML=places.length?places.map(p=>`<article class="place-card"><p class="detail-type">${CATS[p.cat].symbol} ${escape(CATS[p.cat].name)}</p><h3>${escape(p.name)}</h3><p class="card-meta">${p.visit?`~${duration(p.visit)}`:'Access point'} · ${escape(p.effort)}</p><p>${escape(p.desc)}</p>${p.status==='closed'?`<p class="notice">${p.statusLabel} · <a href="${p.statusSource}" target="_blank" rel="noopener">Check status ↗</a></p>`:''}<div class="card-actions"><button class="quiet" data-view="${p.id}">Find on map ↗</button><button class="quiet ${plan().stops.includes(p.id)?'saved':''}" data-add="${p.id}" ${p.status==='closed'&&!plan().stops.includes(p.id)?'disabled':''}>${plan().stops.includes(p.id)?'✓ Saved':p.status==='closed'?'Closed — check NPS':'+ Add stop'}</button></div></article>`).join(''):'<p class="muted">No matching places. Try a different name or turn a category back on.</p>';
     $('place-list').querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{select(b.dataset.view,true);renderPlaces();});
     $('place-list').querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>toggleStop(b.dataset.add));
   }
@@ -115,13 +93,14 @@
     for(const p of sorted){
       if(!visible.has(p.cat))continue;
       const c=CATS[p.cat],g=el('g',{class:'marker',role:'button',tabindex:'0','aria-label':`View ${p.name}`,transform:`translate(${p.x} ${p.y})`,'data-place':p.id});
+      const leader=el('line',{class:'pin-leader',stroke:'#6b735f','stroke-opacity':'.65','pointer-events':'none'});
       const hit=el('circle',{r:22,fill:'transparent'}),circle=el('circle',{class:'pin-circle',r:12,fill:p.id===selected?'#f8dfbb':'#fffdf7',stroke:c.color,'stroke-width':2});
       const symbol=el('text',{class:'marker-symbol','text-anchor':'middle','dominant-baseline':'central','font-size':13},c.symbol);
       const label=el('text',{class:'marker-label','font-size':12,'aria-hidden':'true'},p.name);
-      g.append(el('title',{},`${p.name} · ${p.effort}`),hit,circle,symbol,label);
+      g.append(el('title',{},`${p.name} · ${p.effort}`),leader,hit,circle,symbol,label);
       g.onclick=e=>{if(e.detail===0){select(p.id);$('place-detail').scrollIntoView({block:'nearest',behavior:'auto'});}};
-      g.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();select(p.id);$('place-detail').scrollIntoView({block:'nearest',behavior:'auto'});}};
-      svg.append(g);markers.push({p,g,hit,circle,symbol,label});
+      g.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();select(p.id);$('detail-title').tabIndex=-1;$('detail-title').focus();}};
+      svg.append(g);markers.push({p,g,leader,hit,circle,symbol,label});
     }
     updateCamera();
   }
@@ -136,14 +115,29 @@
     const scale=matrix.a,unit=1/scale,frame=svg.getBoundingClientRect(),boxes=[];
     // Keep controls clear; favor the active place, planned stops, and entrances.
     boxes.push({l:0,t:0,r:70,b:170},{l:frame.width-60,t:0,r:frame.width,b:80});
-    for(const {p} of markers){const point=svg.createSVGPoint();point.x=p.x;point.y=p.y;const screen=point.matrixTransform(matrix),x=screen.x-frame.x,y=screen.y-frame.y;boxes.push({l:x-14,t:y-14,r:x+14,b:y+14});}
     const priority=[...markers].sort((a,b)=>score(b.p)-score(a.p));
     function score(p){return(p.id===selected?100:0)+(plan().stops.includes(p.id)?20:0)+(p.cat==='entrance'?10:0);}
+    const placedPins=[];
+    for(const m of priority){
+      const point=svg.createSVGPoint();point.x=m.p.x;point.y=m.p.y;
+      const screen=point.matrixTransform(matrix),sx=screen.x-frame.x,sy=screen.y-frame.y;
+      let chosen={x:sx,y:sy};
+      if(sx>=0&&sx<=frame.width&&sy>=0&&sy<=frame.height){
+        const candidates=[chosen];
+        for(let radius=28;radius<=196;radius+=28)for(let i=0;i<16;i++){const a=i*Math.PI/8;candidates.push({x:sx+Math.cos(a)*radius,y:sy+Math.sin(a)*radius});}
+        chosen=candidates.find(c=>c.x>=25&&c.x<=frame.width-25&&c.y>=25&&c.y<=frame.height-55&&!placedPins.some(q=>Math.hypot(c.x-q.x,c.y-q.y)<45)&&!boxes.some(b=>c.x+23>b.l&&c.x-23<b.r&&c.y+23>b.t&&c.y-23<b.b))||chosen;
+        placedPins.push(chosen);boxes.push({l:chosen.x-15,t:chosen.y-15,r:chosen.x+15,b:chosen.y+15});
+      }
+      m.screen=chosen;
+      const dx=(chosen.x-sx)*unit,dy=(chosen.y-sy)*unit;
+      m.g.setAttribute('transform',`translate(${m.p.x+dx} ${m.p.y+dy})`);
+      m.leader.setAttribute('x1',-dx);m.leader.setAttribute('y1',-dy);m.leader.setAttribute('x2',0);m.leader.setAttribute('y2',0);m.leader.setAttribute('stroke-width',unit);
+    }
     for(const m of priority){
       const {p,hit,circle,symbol,label}=m;
-      hit.setAttribute('r',22*unit);circle.setAttribute('r',12*unit);circle.setAttribute('stroke-width',2*unit);symbol.setAttribute('font-size',13*unit);label.setAttribute('font-size',11*unit);label.setAttribute('stroke-width',3.5*unit);
-      const point=svg.createSVGPoint();point.x=p.x;point.y=p.y;const screen=point.matrixTransform(matrix),x=screen.x-frame.x,y=screen.y-frame.y;
-      const width=Math.min(250,p.name.length*5.7),height=15;
+      hit.setAttribute('r',22*unit);circle.setAttribute('r',12*unit);circle.setAttribute('stroke-width',2*unit);symbol.style.fontSize=`${13*unit}px`;label.setAttribute('font-size',11*unit);label.setAttribute('stroke-width',3.5*unit);
+      const {x,y}=m.screen;
+      label.style.display='';const width=label.getComputedTextLength()*scale,height=16;
       const candidates=[{dx:19,dy:4,anchor:'start'},{dx:-19,dy:4,anchor:'end'},{dx:0,dy:-21,anchor:'middle'},{dx:0,dy:29,anchor:'middle'}];
       let placed=false;
       for(const c of candidates){const left=x+c.dx-(c.anchor==='end'?width:c.anchor==='middle'?width/2:0),top=y+c.dy-11,box={l:left-3,t:top-2,r:left+width+3,b:top+height+2};
@@ -173,6 +167,10 @@
     const hash=location.hash.slice(1);if(!PARKS[hash]&&hash==='explore')return;
     key=PARKS[hash]?hash:'joshua-tree';park=PARKS[key];selected=park.featured;visible=new Set(Object.keys(CATS));camera={x:0,y:0,w:1200,h:1100};
     const old=plans[key];if(!old||!Array.isArray(old.stops))plans[key]={stops:[...park.presets[0].stops],preset:park.presets[0].id};else plans[key]={stops:old.stops.filter(id=>park.places.some(p=>p.id===id)),preset:typeof old.preset==='string'?old.preset:'custom'};
+    plan().budget=[240,360,480,600].includes(old?.budget)?old.budget:360;plan().breaks=[30,45,60,90].includes(old?.breaks)?old.breaks:45;
+    $('day-budget').value=String(plan().budget);$('break-time').value=String(plan().breaks);
+    $('map-regions').innerHTML=park.regions.map((region,i)=>`<button type="button" class="quiet" data-region="${i}">${escape(region.name)}</button>`).join('');
+    $('map-regions').querySelectorAll('button').forEach(button=>button.onclick=()=>{const [x,y,w]=park.regions[Number(button.dataset.region)].box;camera={x,y,w,h:w*1100/1200};updateCamera();});
     document.body.dataset.park=key;document.title=`${park.name} — Desert Days`;
     document.querySelector('.map-caption').textContent=`${park.name} · connected planning map · layout simplified`;
     text('park-title',park.name);text('park-kicker',park.kicker);text('park-description',park.description);text('condition-summary',park.condition);text('field-note',park.fieldNote);$('conditions-link').href=park.sources.conditions;$('official-map').href=park.sources.map;$('search').value='';
@@ -180,7 +178,10 @@
     $('source-links').innerHTML=Object.entries(park.sources).map(([name,url])=>`<a href="${url}" target="_blank" rel="noopener">NPS ${name} ↗</a>`).join('');
     renderPlan();renderLegend();renderPlaces();renderDetail();drawMap();persist();
   }
-  $('route-choice').onchange=e=>{const preset=park.presets.find(p=>p.id===e.target.value);if(preset)plans[key]={stops:[...preset.stops],preset:preset.id};else plan().preset='custom';persist();renderPlan();renderPlaces();renderDetail();drawMap();};
+  $('route-choice').onchange=e=>{const preset=park.presets.find(p=>p.id===e.target.value);if(preset)plans[key]={...plan(),stops:[...preset.stops],preset:preset.id};else plan().preset='custom';persist();renderPlan();renderPlaces();renderDetail();drawMap();};
+  $('day-budget').onchange=e=>{plan().budget=Number(e.target.value);persist();renderPlan();};
+  $('break-time').onchange=e=>{plan().breaks=Number(e.target.value);persist();renderPlan();};
+  $('quick-filter').onchange=e=>{visible=new Set(e.target.value==='all'?Object.keys(CATS):[e.target.value]);renderLegend();renderPlaces();drawMap();reset();};
   $('search').oninput=renderPlaces;$('clear-plan').onclick=()=>{plan().stops=[];routeChanged();};$('print-plan').onclick=()=>window.print();
   $('zoom-in').onclick=()=>centerZoom(1.35);$('zoom-out').onclick=()=>centerZoom(1/1.35);$('reset-map').onclick=reset;
   const expandButton=$('fullscreen'),toolbar=expandButton.parentElement;
