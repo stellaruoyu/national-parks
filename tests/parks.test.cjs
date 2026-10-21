@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const context = vm.createContext({});
 vm.runInContext(fs.readFileSync(require('node:path').join(__dirname, '../parks.js'), 'utf8'), context);
+vm.runInContext(fs.readFileSync(require('node:path').join(__dirname, '../new-parks.js'), 'utf8'), context);
 const parks = context.PARKS;
 const planning = require('../planning.js');
 
@@ -31,7 +32,7 @@ for (const [key, park] of Object.entries(parks)) {
     for (const [a, b, minutes, type] of park.edges) {
       assert.ok(nodes.has(a) && nodes.has(b), `unknown road endpoint: ${a}, ${b}`);
       assert.ok(Number.isFinite(minutes) && minutes >= 0, 'invalid travel estimate');
-      assert.ok(['road', 'rough', 'trail'].includes(type), 'unknown access type');
+      assert.ok(['road', 'rough', 'trail','shuttle'].includes(type), 'unknown access type');
     }
   });
   test(`${key}: suggested trips contain valid, reachable stops and return to access`, () => {
@@ -42,6 +43,7 @@ for (const [key, park] of Object.entries(parks)) {
       const last = park.places.find(p => p.id === trip.stops.at(-1));
       assert.equal(first.cat, 'entrance');
       assert.equal(last.cat, 'entrance');
+      assert.equal(planning.estimate(park,trip.stops,45).unavailable,false,'suggested trip includes closed or uncertain access');
     }
   });
   test(`${key}: all places have useful visit details and sourced information`, () => {
@@ -108,4 +110,41 @@ test('All area shortcuts stay on the connected map and all places link to a sour
     for(const p of park.places)assert.match(p.source,/^https:\/\/www\.nps\.gov\//);
     for(const p of park.places.filter(p=>p.status==='closed'))assert.ok(p.statusLabel&&p.statusSource);
   }
+});
+
+test('Four parks are registered and navigation is generated from the same catalog',()=>{
+  assert.equal(Object.keys(parks).length,4);
+  for(const id of ['joshua-tree','death-valley','petrified-forest','yosemite'])assert.ok(parks[id]);
+});
+test('Petrified Forest shows no invented drive-in campgrounds and no driving shortcuts to hikes',()=>{
+  const park=parks['petrified-forest'];
+  assert.equal(park.places.filter(p=>p.cat==='campground').length,0);
+  assert.match(park.campingNote,/No developed campgrounds/);
+  assert.equal(park.maxDayMinutes,540);
+  for(const destination of ['blueTrail','giant','longAgate']){
+    const route=planning.path(park,'north',destination);
+    assert.ok(route.walk>0);
+    assert.equal(park.edges[route.edges.at(-1)][3],'trail');
+  }
+});
+test('Yosemite grove access counts the shuttle separately and includes the return',()=>{
+  const park=parks.yosemite;
+  const toGrove=planning.path(park,'south','grove');
+  assert.equal(toGrove.drive,3);assert.equal(toGrove.shuttle,25);
+  const result=planning.estimate(park,['south','grove','south'],45);
+  assert.equal(result.shuttle,50);assert.equal(result.drive,6);
+  assert.ok(result.low>=result.visit+result.shuttle+45);
+});
+test('Yosemite Hetch Hetchy is connected only through the outside highway approach',()=>{
+  const park=parks.yosemite;
+  const route=planning.path(park,'arch','dam');
+  assert.ok(route.edges.some(i=>park.edges[i][0]==='outside120'));
+  const disconnected={...park,edges:park.edges.filter(([a,b])=>a!=='outside120'&&b!=='outside120')};
+  assert.equal(planning.path(disconnected,'arch','dam'),null);
+});
+test('Yosemite Glacier Point uses its road approach, and known closed camps remain unavailable',()=>{
+  const park=parks.yosemite;
+  const route=planning.path(park,'welcome','glacier');
+  assert.ok(route.edges.some(i=>park.edges[i][0]==='chinquapin'));
+  for(const id of ['craneCamp','tuolumneCamp','bridalCamp','lowerPines'])assert.equal(planning.estimate(park,['arch',id,'arch'],45).unavailable,true);
 });

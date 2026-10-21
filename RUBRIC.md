@@ -18,7 +18,7 @@ For first-time visitors planning a day trip with family or friends. Used at home
 
 - **R5 — Symbols:** Every marked place carries its category's legend symbol on the marker itself. Use symbols and words, not color alone.
 - **R6 — Explore comfortably:** Every place and name can be reached on a phone. Provide drag-to-pan, wheel/pinch zoom, zoom buttons, reset, and a searchable place list.
-- **R7 — Connected maps:** Each park has one continuous map, not disconnected quadrant drawings. Every place connects to the access network by a road or marked trail. Include external access roads where needed, such as Joshua Tree's Black Rock and Indian Cove; never invent a through-road to join places. Both parks link from shared navigation, and switching parks preserves saved stops.
+- **R7 — Connected maps:** Each park has one continuous map, not disconnected quadrant drawings. Every place connects to the access network by a road, marked trail, or clearly identified shuttle connection. Include external access roads where needed, such as Joshua Tree's Black Rock and Indian Cove; never invent a through-road to join places. All parks link from shared navigation, and switching parks preserves saved stops.
 - **R8 — Useful planning:** Include entrances/access routes and campgrounds. Show walking effort, visit time, and estimated travel between planned stops. Date known closures and link their source; static notes must never appear live.
 
 A map with a failed required check still gets its /20 score but is not ready for release. These are planning guides: use the official NPS map and current conditions for navigation, weather, closures, and camping availability on the actual travel date.

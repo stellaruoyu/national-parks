@@ -7,6 +7,8 @@
   try { const saved=JSON.parse(localStorage.getItem(STORE)||'{}'); if(saved && typeof saved==='object' && !Array.isArray(saved))plans=saved; } catch {storageOK=false;}
   const text=(id,value)=>$(id).textContent=value;
   const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const blocked=p=>['closed','uncertain'].includes(p.status);
+  $('park-navigation').innerHTML=Object.entries(PARKS).map(([id,p])=>`<a href="#${id}" data-park="${id}">${escape(p.name)}</a>`).join('');
   const duration=m=>m>=60?`${Math.floor(m/60)}h${m%60?' '+m%60+'m':''}`:`${m}m`;
   const el=(tag,attrs={},content)=>{const n=document.createElementNS(NS,tag);for(const [k,v]of Object.entries(attrs))n.setAttribute(k,v);if(content!==undefined)n.textContent=content;return n;};
   const find=id=>park.places.find(p=>p.id===id);
@@ -16,7 +18,8 @@
   function plan(){return plans[key];}
   function persist(){try{localStorage.setItem(STORE,JSON.stringify(plans));storageOK=true;}catch{storageOK=false;}text('save-status',storageOK?'Your stops are saved on this device.':'Stops stay available this session; device storage is unavailable.');}
   function routeChanged(){plan().preset='custom';persist();renderPlan();renderPlaces();renderDetail();drawMap();}
-  function toggleStop(id){const control=document.activeElement,fromCard=control?.dataset.add===id,fromDetail=control?.id==='detail-add';if(plan().stops.includes(id))plan().stops=plan().stops.filter(s=>s!==id);else if(find(id).status!=='closed')plan().stops.push(id);routeChanged();if(fromCard)document.querySelector(`[data-add="${id}"]`)?.focus({preventScroll:true});else if(fromDetail)$('detail-add').focus({preventScroll:true});}
+  function toggleStop(id){const control=document.activeElement,fromCard=control?.dataset.add===id,fromDetail=control?.id==='detail-add';if(plan().stops.includes(id))plan().stops=plan().stops.filter(s=>s!==id);else if(!blocked(find(id)))plan().stops.push(id);routeChanged();if(fromCard)document.querySelector(`[data-add="${id}"]`)?.focus({preventScroll:true});else if(fromDetail)$('detail-add').focus({preventScroll:true});}
+  function legLabel(leg){const parts=[];if(leg.drive)parts.push(`~${range(Math.floor(leg.drive/5)*5,Math.ceil(leg.drive*1.3/5)*5)} drive`);if(leg.shuttle)parts.push(`~${duration(leg.shuttle)} shuttle / wait`);if(leg.walk)parts.push('walk access');return `${parts.join(' + ')||'same location'} from previous stop`;}
   function renderPlan(){
     const current=plan(),preset=park.presets.find(p=>p.id===current.preset);
     $('route-choice').innerHTML=park.presets.map(p=>`<option value="${p.id}">${escape(p.name)}</option>`).join('')+'<option value="custom">My own stops</option>';
@@ -25,14 +28,18 @@
     const result=ParkPlanning.estimate(park,current.stops,current.breaks),{legs,unavailable:unreachable}=result;
     activeRoute=new Set(legs.flatMap(leg=>leg?.edges||[]));
     $('trip-totals').innerHTML=`<div><strong>${unreachable?'—':range(result.driveLow,result.driveHigh)}</strong><span>driving allowance</span></div><div><strong>${duration(result.visit)}</strong><span>visits &amp; walks, before breaks</span></div><p>${current.stops.length?`${current.stops.length} stops · ${unreachable?'Remove closed or disconnected stops.':`${range(result.low,result.high)} total, including ${duration(current.breaks)} for breaks.`}`:'Add places below to begin your day.'}</p>`;
+    if(result.shuttle)$('trip-totals').insertAdjacentHTML('beforeend',`<div><strong>${range(result.shuttle,result.shuttleHigh)}</strong><span>shuttle &amp; waiting allowance, included in total</span></div>`);
     const budget=$('budget-status');budget.className='budget-status';
     if(unreachable){budget.textContent='This route includes unavailable access. Check the marked stops.';budget.classList.add('over');}
     else if(!current.stops.length)budget.textContent='Choose a route or add a few places to start.';
+    else if(park.maxDayMinutes&&(result.high>park.maxDayMinutes||current.budget>park.maxDayMinutes)){budget.textContent=`The checked park road hours allow ${duration(park.maxDayMinutes)} maximum (8 am–5 pm). Start early and shorten any plan that will not finish before closing.`;budget.classList.add('over');}
     else if(result.high>current.budget){budget.textContent=`Allow up to ${duration(result.high)}. That exceeds your ${duration(current.budget)} day; remove a stop or allow longer.`;budget.classList.add('over');}
     else budget.textContent=`Fits your ${duration(current.budget)} day, with about ${duration(current.budget-result.high)} to spare at the upper estimate.`;
-    $('trip-stops').innerHTML=current.stops.map((id,i)=>{const p=find(id),leg=legs[i];return `<li><div class="trip-stop-head"><span class="stop-number">${i+1}</span><button class="stop-link" data-select="${id}">${escape(p.name)}</button></div><p class="stop-time">${i?(leg?`~${range(Math.floor(leg.drive/5)*5,Math.ceil(leg.drive*1.3/5)*5)} drive${leg.walk?' + walk access':''} from previous stop`:'No available road connection'):'Start here'} · ${p.visit?`~${duration(p.visit)} visit`:'access point'}</p>${p.note?`<details class="stop-context"><summary>${p.status==='closed'?'Closed — see NPS note':p.cat==='campground'?'Camping & access note':'Visit & access note'}</summary><p>${escape(p.note)}</p><a href="${p.statusSource||p.source}" target="_blank" rel="noopener">Check NPS ↗</a></details>`:''}<div class="stop-tools"><button data-up="${i}" aria-label="Move ${escape(p.name)} up" ${i===0?'disabled':''}>↑</button><button data-down="${i}" aria-label="Move ${escape(p.name)} down" ${i===current.stops.length-1?'disabled':''}>↓</button><button data-remove="${i}" aria-label="Remove ${escape(p.name)}">Remove</button></div></li>`;}).join('');
+    $('trip-stops').innerHTML=current.stops.map((id,i)=>{const p=find(id),leg=legs[i];return `<li><div class="trip-stop-head"><span class="stop-number">${i+1}</span><button class="stop-link" data-select="${id}">${escape(p.name)}</button></div><p class="stop-time">${i?(leg?legLabel(leg):'No available road connection'):'Start here'} · ${p.visit?`~${duration(p.visit)} visit`:'access point'}</p>${p.note?`<details class="stop-context"><summary>${blocked(p)?'Access status — see NPS note':p.cat==='campground'?'Camping & access note':'Visit & access note'}</summary><p>${escape(p.note)}</p><a href="${p.statusSource||p.source}" target="_blank" rel="noopener">Check NPS ↗</a></details>`:''}<div class="stop-tools"><button data-up="${i}" aria-label="Move ${escape(p.name)} up" ${i===0?'disabled':''}>↑</button><button data-down="${i}" aria-label="Move ${escape(p.name)} down" ${i===current.stops.length-1?'disabled':''}>↓</button><button data-remove="${i}" aria-label="Remove ${escape(p.name)}">Remove</button></div></li>`;}).join('');
     const notes=[];
-    if(unreachable)notes.push('A selected access road is closed in the source snapshot. Remove that stop and check NPS.');
+    if(unreachable)notes.push('A selected stop or connection is closed or needs confirmation in the source snapshot. Remove it and check NPS.');
+    if(park.planningNote)notes.push(park.planningNote);
+    if(result.shuttle)notes.push('Shuttle and waiting allowances are counted separately from driving. Check operating hours; missed or suspended shuttles need a different plan.');
     if(current.stops.some(id=>id==='racetrack'))notes.push('Racetrack is a separate remote excursion, not a quick add-on to a day trip.');
     if(current.stops.some(id=>find(id).cat==='campground'))notes.push('Camp visits are scouting time only; overnight stays and reservations are not included.');
     if(key==='death-valley'&&current.stops.some(id=>id==='texas'||id==='stovepipeCamp'))notes.push('Seasonal campground closure in the Oct 19 snapshot: check the selected campground’s NPS details before planning a stay.');
@@ -47,7 +54,7 @@
   }
   function renderDetail(){
     const p=find(selected),c=CATS[p.cat],saved=plan().stops.includes(p.id);
-    $('place-detail').innerHTML=`<div class="detail-top"><div><p class="detail-type">${c.symbol} ${escape(c.name)}</p><h3 id="detail-title">${escape(p.name)}</h3></div><button type="button" id="detail-add" class="primary ${saved?'saved':''}" ${p.status==='closed'&&!saved?'disabled':''}>${saved?'✓ In your day':p.status==='closed'?'Closed in NPS snapshot':'+ Add to my day'}</button></div><div class="metrics"><span>${p.visit?`~${duration(p.visit)} visit`:'Arrival / departure'}</span><span>${escape(p.effort)}</span><span>${escape(p.road)}</span></div><p>${escape(p.desc)}</p>${p.note?`<p class="access-note">${escape(p.note)}</p>`:''}<a class="source" target="_blank" rel="noopener" href="${p.statusSource||p.source}">NPS ${p.status==='closed'?'closure':p.cat==='campground'?'camping':'visitor'} information ↗</a><p class="small">Checked ${park.checked}. Visit allowances include walking; driving allowances are estimated separately.</p>`;
+    $('place-detail').innerHTML=`<div class="detail-top"><div><p class="detail-type">${c.symbol} ${escape(c.name)}</p><h3 id="detail-title">${escape(p.name)}</h3></div><button type="button" id="detail-add" class="primary ${saved?'saved':''}" ${blocked(p)&&!saved?'disabled':''}>${saved?'✓ In your day':p.status==='closed'?'Closed in NPS snapshot':p.status==='uncertain'?'Confirm with NPS':'+ Add to my day'}</button></div><div class="metrics"><span>${p.visit?`~${duration(p.visit)} visit`:'Arrival / departure'}</span><span>${escape(p.effort)}</span><span>${escape(p.road)}</span></div><p>${escape(p.desc)}</p>${p.note?`<p class="access-note">${escape(p.note)}</p>`:''}<a class="source" target="_blank" rel="noopener" href="${p.statusSource||p.source}">NPS ${blocked(p)?'access':p.cat==='campground'?'camping':'visitor'} information ↗</a><p class="small">Checked ${park.checked}. Visit allowances include walking; driving and shuttle allowances are estimated separately.</p>`;
     $('detail-add').onclick=()=>toggleStop(p.id);
   }
   function select(id,focusMap=false){
@@ -63,7 +70,8 @@
     const query=$('search').value.trim().toLowerCase();
     const places=park.places.filter(p=>visible.has(p.cat)&&`${p.name} ${p.road} ${p.effort}`.toLowerCase().includes(query));
     text('result-count',`${places.length} of ${park.places.length} places · filters affect the map and this list`);
-    $('place-list').innerHTML=places.length?places.map(p=>`<article class="place-card"><p class="detail-type">${CATS[p.cat].symbol} ${escape(CATS[p.cat].name)}</p><h3>${escape(p.name)}</h3><p class="card-meta">${p.visit?`~${duration(p.visit)}`:'Access point'} · ${escape(p.effort)}</p><p>${escape(p.desc)}</p>${p.status==='closed'?`<p class="notice">${p.statusLabel} · <a href="${p.statusSource}" target="_blank" rel="noopener">Check status ↗</a></p>`:''}<div class="card-actions"><button class="quiet" data-view="${p.id}">Find on map ↗</button><button class="quiet ${plan().stops.includes(p.id)?'saved':''}" data-add="${p.id}" ${p.status==='closed'&&!plan().stops.includes(p.id)?'disabled':''}>${plan().stops.includes(p.id)?'✓ Saved':p.status==='closed'?'Closed — check NPS':'+ Add stop'}</button></div></article>`).join(''):'<p class="muted">No matching places. Try a different name or turn a category back on.</p>';
+    const emptyMessage=park.campingNote&&visible.size===1&&visible.has('campground')?park.campingNote:'No matching places. Try a different name or turn a category back on.';
+    $('place-list').innerHTML=places.length?places.map(p=>`<article class="place-card"><p class="detail-type">${CATS[p.cat].symbol} ${escape(CATS[p.cat].name)}</p><h3>${escape(p.name)}</h3><p class="card-meta">${p.visit?`~${duration(p.visit)}`:'Access point'} · ${escape(p.effort)}</p><p>${escape(p.desc)}</p>${blocked(p)?`<p class="notice">${p.statusLabel} · <a href="${p.statusSource}" target="_blank" rel="noopener">Check status ↗</a></p>`:''}<div class="card-actions"><button class="quiet" data-view="${p.id}">Find on map ↗</button><button class="quiet ${plan().stops.includes(p.id)?'saved':''}" data-add="${p.id}" ${blocked(p)&&!plan().stops.includes(p.id)?'disabled':''}>${plan().stops.includes(p.id)?'✓ Saved':p.status==='closed'?'Closed — check NPS':p.status==='uncertain'?'Confirm with NPS':'+ Add stop'}</button></div></article>`).join(''):`<p class="muted">${escape(emptyMessage)}</p>`;
     $('place-list').querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{select(b.dataset.view,true);renderPlaces();});
     $('place-list').querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>toggleStop(b.dataset.add));
   }
@@ -71,15 +79,15 @@
   function drawMap(){
     svg.replaceChildren(el('title',{},`${park.fullName}: connected roads and places. Use the place list below as an alternative.`));
     const terrain=el('g',{'aria-hidden':'true'});
-    terrain.append(el('path',{d:'M60 430 Q90 100 360 240 T710 270 Q930 190 1080 400 L1130 1050 Q850 1080 700 900 T250 950 Q20 750 60 430Z',fill:key==='joshua-tree'?'#dce2c7':'#e0cfac',opacity:'.7'}));
-    for(let i=0;i<5;i++)terrain.append(el('path',{d:`M${-80+i*25} ${610+i*42} Q200 ${390+i*50} 350 ${650+i*40} T760 ${1030+i*15}`,fill:'none',stroke:key==='joshua-tree'?'#c8cfb1':'#d0b48d','stroke-width':i%2?1.5:3,opacity:'.45'}));
+    terrain.append(el('path',{d:'M60 430 Q90 100 360 240 T710 270 Q930 190 1080 400 L1130 1050 Q850 1080 700 900 T250 950 Q20 750 60 430Z',fill:park.colors?.land||(key==='joshua-tree'?'#dce2c7':'#e0cfac'),opacity:'.7'}));
+    for(let i=0;i<5;i++)terrain.append(el('path',{d:`M${-80+i*25} ${610+i*42} Q200 ${390+i*50} 350 ${650+i*40} T760 ${1030+i*15}`,fill:'none',stroke:park.colors?.contour||(key==='joshua-tree'?'#c8cfb1':'#d0b48d'),'stroke-width':i%2?1.5:3,opacity:'.45'}));
     park.terrain.forEach(([label,x,y])=>terrain.append(el('text',{x,y,class:'terrain-label','text-anchor':'middle',transform:`rotate(-18 ${x} ${y})`},label)));
     svg.append(terrain);
     park.edges.forEach((edge,i)=>{
       const points=edgePoints(edge),closed=park.closedEdges?.some(e=>same(e,edge[0],edge[1]));
       const group=el('g',{'aria-hidden':'true',opacity:closed?'.45':'1'});
       if(edge[3]==='road'){group.append(el('polyline',{points,class:'road-base'}),el('polyline',{points,class:'road'}));}
-      else group.append(el('polyline',{points,class:edge[3]==='rough'?'rough-base':'trail-base'}));
+      else group.append(el('polyline',{points,class:edge[3]==='rough'?'rough-base':edge[3]==='shuttle'?'shuttle-base':'trail-base'}));
       if(closed)group.append(el('polyline',{points,fill:'none',stroke:'#a34537','stroke-width':4,'stroke-dasharray':'8 8'}));
       if(activeRoute.has(i))group.append(el('polyline',{points,class:'planned','stroke-dasharray':edge[3]==='trail'?'2 6':edge[3]==='rough'?'8 5':'none'}));
       svg.append(group);
@@ -171,9 +179,13 @@
     $('day-budget').value=String(plan().budget);$('break-time').value=String(plan().breaks);
     $('map-regions').innerHTML=park.regions.map((region,i)=>`<button type="button" class="quiet" data-region="${i}">${escape(region.name)}</button>`).join('');
     $('map-regions').querySelectorAll('button').forEach(button=>button.onclick=()=>{const [x,y,w]=park.regions[Number(button.dataset.region)].box;camera={x,y,w,h:w*1100/1200};updateCamera();});
-    document.body.dataset.park=key;document.title=`${park.name} — Desert Days`;
+    document.body.dataset.park=key;document.title=`${park.name} — Park Days`;
     document.querySelector('.map-caption').textContent=`${park.name} · connected planning map · layout simplified`;
     text('park-title',park.name);text('park-kicker',park.kicker);text('park-description',park.description);text('condition-summary',park.condition);text('field-note',park.fieldNote);$('conditions-link').href=park.sources.conditions;$('official-map').href=park.sources.map;$('search').value='';
+    text('source-date',`Sources checked ${park.checked} · Condition notes are a dated snapshot, not a live feed.`);
+    $('park-specific-note').hidden=!park.campingNote;
+    $('park-specific-note').innerHTML=park.campingNote?`${escape(park.campingNote)} <a href="${park.sources.camping}" target="_blank" rel="noopener">NPS camping details ↗</a>`:'';
+    $('shuttle-key').hidden=!park.edges.some(edge=>edge[3]==='shuttle');
     document.querySelectorAll('[data-park]').forEach(a=>{if(a.tagName!=='A')return;if(a.dataset.park===key)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
     $('source-links').innerHTML=Object.entries(park.sources).map(([name,url])=>`<a href="${url}" target="_blank" rel="noopener">NPS ${name} ↗</a>`).join('');
     renderPlan();renderLegend();renderPlaces();renderDetail();drawMap();persist();

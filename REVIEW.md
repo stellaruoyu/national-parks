@@ -1,4 +1,4 @@
-# Visitor-focused review — October 19, 2026
+# Visitor-focused review — updated October 20, 2026
 
 This is an author self-assessment against the existing RUBRIC.md, not an independent grade or a claim that the maps are perfect geographic navigation products. The rubric has not been relaxed to increase the scores.
 
@@ -36,3 +36,39 @@ Browser QA checks desktop and phone-sized layouts, search, entrance filtering, r
 - Death Valley maps: https://www.nps.gov/deva/planyourvisit/maps.htm
 - Death Valley hikes: https://www.nps.gov/deva/planyourvisit/hiking.htm
 - Death Valley conditions: https://www.nps.gov/deva/planyourvisit/conditions.htm
+
+## New parks — October 20 update
+
+The same four criteria and five-point maximums apply. R7 now says **all parks**, and explicitly names shuttle connections so a bus-only connection is not mistaken for a private-car road. This does not award extra points or lower the scoring standard.
+
+| Criterion | Petrified Forest | Yosemite | Evidence / remaining check |
+|---|---:|---:|---|
+| Find things quickly | 4/5 provisional | 4/5 provisional | Shared search, filters, category symbols, and area shortcuts; 20 and 33 marked places respectively. Actual label readability at phone size still needs visual verification. |
+| Choose a realistic visit | 5/5 | 5/5 | Three connected, editable suggested trips each. PF road-hour warning; Yosemite return shuttle allowance and separate driving totals. Visit times identify walking effort and approaches. |
+| Trust the information | 5/5 | 5/5 | Official NPS sources and dated notes. PF has no invented developed camps. Yosemite identifies seasonal roads, closed camps, the outside Hetch Hetchy approach, and conflicting Lower Pines information. |
+| Comfortable and appealing to use | 4/5 provisional | 4/5 provisional | Existing colors, typography, map controls, keyboard support, responsive layout, and independent saved plans are reused. New four-park navigation and dense Yosemite markers still need desktop/phone inspection. |
+| **Provisional self-assessed total** | **18/20** | **18/20** | Not a final visual sign-off or independent grade. Two points are withheld until the new layouts are actually inspected. |
+
+### Verification and release status
+
+The automated suite covers all four park networks, suggested trips, official-source links, walking approaches, one-way routing, closure handling, and separate shuttle timing. In particular, a South Entrance–Mariposa Grove–South Entrance trip counts 6 minutes of baseline driving and 50 minutes of shuttle/waiting allowance, before visits and breaks. These are editorial allowances, not official journey times.
+
+The two new maps have **not** received a browser visual sign-off. The preview browser denied access under its security policy. Do not carry forward the earlier two-park browser QA claim as evidence for these additions. R5–R8 are implemented and their data/planning portions are tested; on-screen behavior and plan preservation across all four navigation links still need manual confirmation before declaring release-ready.
+
+### One honest weakness each
+
+- **Petrified Forest:** the schematic simplifies road geometry, including Blue Mesa. It cannot supply accurate distances or turn-by-turn directions.
+- **Yosemite:** static allowances cannot predict parking queues or a suspended shuttle. Check the travel date and current NPS information; do not interpret the connected diagram as year-round access.
+
+### New-park sources
+
+- Petrified Forest maps: https://www.nps.gov/pefo/planyourvisit/maps.htm
+- Petrified Forest places and walks: https://www.nps.gov/pefo/planyourvisit/placestogo.htm and https://www.nps.gov/pefo/planyourvisit/trails.htm
+- Petrified Forest hours and camping: https://www.nps.gov/pefo/planyourvisit/hours.htm and https://www.nps.gov/pefo/planyourvisit/camping.htm
+- Petrified Forest conditions: https://www.nps.gov/pefo/planyourvisit/conditions.htm
+- Yosemite maps: https://www.nps.gov/yose/planyourvisit/maps.htm
+- Yosemite walks: https://www.nps.gov/yose/planyourvisit/valleyhikes.htm
+- Yosemite conditions and campgrounds: https://www.nps.gov/yose/planyourvisit/conditions.htm and https://www.nps.gov/yose/planyourvisit/campgrounds.htm
+- Yosemite Mariposa Grove: https://www.nps.gov/yose/planyourvisit/mg.htm
+- Yosemite Hetch Hetchy: https://www.nps.gov/yose/planyourvisit/hetchhetchy.htm
+- Yosemite traffic: https://www.nps.gov/yose/planyourvisit/traffic.htm
