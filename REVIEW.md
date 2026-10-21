@@ -43,17 +43,21 @@ The same four criteria and five-point maximums apply. R7 now says **all parks**,
 
 | Criterion | Petrified Forest | Yosemite | Evidence / remaining check |
 |---|---:|---:|---|
-| Find things quickly | 4/5 provisional | 4/5 provisional | Shared search, filters, category symbols, and area shortcuts; 20 and 33 marked places respectively. Actual label readability at phone size still needs visual verification. |
+| Find things quickly | 5/5 | 5/5 | Shared search, filters, category symbols, and area shortcuts; 20 and 33 marked places respectively. Phone numbers match a scrollable full-name list inside the map frame, including expanded view. Tapping a name locates the place. |
 | Choose a realistic visit | 5/5 | 5/5 | Three connected, editable suggested trips each. PF road-hour warning; Yosemite return shuttle allowance and separate driving totals. Visit times identify walking effort and approaches. |
 | Trust the information | 5/5 | 5/5 | Official NPS sources and dated notes. PF has no invented developed camps. Yosemite identifies seasonal roads, closed camps, the outside Hetch Hetchy approach, and conflicting Lower Pines information. |
-| Comfortable and appealing to use | 4/5 provisional | 4/5 provisional | Existing colors, typography, map controls, keyboard support, responsive layout, and independent saved plans are reused. New four-park navigation and dense Yosemite markers still need desktop/phone inspection. |
-| **Provisional self-assessed total** | **18/20** | **18/20** | Not a final visual sign-off or independent grade. Two points are withheld until the new layouts are actually inspected. |
+| Comfortable and appealing to use | 5/5 | 5/5 | Desktop and phone layouts inspected; numbered phone markers retain category symbols and separated targets. Full names wrap within touch-sized list buttons. Close control no longer overlaps the caption. Existing keyboard controls and saved plans are retained. |
+| **Self-assessed total** | **20/20** | **20/20** | For the stated first-visit planning use case, not an independent grade or a claim of perfect navigation. |
 
 ### Verification and release status
 
 The automated suite covers all four park networks, suggested trips, official-source links, walking approaches, one-way routing, closure handling, and separate shuttle timing. In particular, a South Entrance–Mariposa Grove–South Entrance trip counts 6 minutes of baseline driving and 50 minutes of shuttle/waiting allowance, before visits and breaks. These are editorial allowances, not official journey times.
 
-The two new maps have **not** received a browser visual sign-off. The preview browser denied access under its security policy. Do not carry forward the earlier two-park browser QA claim as evidence for these additions. R5–R8 are implemented and their data/planning portions are tested; on-screen behavior and plan preservation across all four navigation links still need manual confirmation before declaring release-ready.
+The local server was restarted successfully and both new maps were visually inspected on desktop and at 390 × 844 phone size. The first check found hidden overview names and a close-button/caption overlap; those issues were fixed rather than automatically promoting the provisional score. Phones now have matching marker numbers and a persistent scrollable full-name list, while desktop labels retain the existing style.
+
+Yosemite was additionally checked at 320 × 740: all 33 names were present, long names wrapped without horizontal overflow, the last entry selected Mariposa Grove, scrolling position survived selection, and all 33 overview marker centers remained at least approximately 45 CSS pixels apart. At 390 × 844, Petrified Forest exposed all 20 names, including Long Logs & Agate House. Its campground filter displayed the no-developed-campgrounds explanation in the map name list. The close control and caption occupy separate rows/areas.
+
+Browser checks also covered search-to-map selection, zoom/reset, keyboard panning/reset, the park-hours warning, Yosemite's separate shuttle allowance, unavailable campground controls, and saved-plan preservation across the four navigation links. Original parks were smoke-tested after the shared display changes. No browser warning/error logs were reported. The 25 automated data/planning tests still pass. These checks are not a timed visitor study or a physical-device gesture test.
 
 ### One honest weakness each
 

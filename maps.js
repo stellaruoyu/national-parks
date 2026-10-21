@@ -12,6 +12,15 @@
   const duration=m=>m>=60?`${Math.floor(m/60)}h${m%60?' '+m%60+'m':''}`:`${m}m`;
   const el=(tag,attrs={},content)=>{const n=document.createElementNS(NS,tag);for(const [k,v]of Object.entries(attrs))n.setAttribute(k,v);if(content!==undefined)n.textContent=content;return n;};
   const find=id=>park.places.find(p=>p.id===id);
+  const nameIndex=document.createElement('section');nameIndex.className='map-name-index';nameIndex.setAttribute('aria-label','Numbered map place names');
+  $('map-frame').insertBefore(nameIndex,document.querySelector('.map-caption'));
+  function renderMapNames(){
+    const scrollTop=nameIndex.querySelector('.map-name-list')?.scrollTop||0;
+    const shown=park.places.filter(p=>visible.has(p.cat));
+    nameIndex.innerHTML=`<p class="name-index-heading">Map names · ${shown.length} places <span>Scroll names · tap to locate</span></p><div class="map-name-list">${shown.map(p=>`<button type="button" data-map-name="${p.id}" aria-pressed="${p.id===selected}"><span class="place-number">${park.places.indexOf(p)+1}</span><span aria-hidden="true">${CATS[p.cat].symbol}</span><span>${escape(p.name)}</span></button>`).join('')||`<p>${escape(visible.size===1&&visible.has('campground')&&park.campingNote?park.campingNote:'No places in these categories. Change the filters below.')}</p>`}</div>`;
+    nameIndex.querySelector('.map-name-list').scrollTop=scrollTop;
+    nameIndex.querySelectorAll('button').forEach(b=>b.onclick=()=>{const expanded=$('map-frame').classList.contains('expanded');select(b.dataset.mapName,!expanded);if(expanded){const p=find(b.dataset.mapName);camera={x:p.x-220,y:p.y-200,w:440,h:400};updateCamera();svg.focus({preventScroll:true});}});
+  }
   const coords=id=>park.junctions[id]||[find(id).x,find(id).y];
   const same=(pair,a,b)=>pair[0]===a&&pair[1]===b;
   const range=(low,high)=>low===high?duration(low):`${duration(low)}–${duration(high)}`;
@@ -77,6 +86,7 @@
   }
   function edgePoints(edge){const [a,b,,,bends=[]]=edge;return [coords(a),...bends,coords(b)].map(p=>p.join(',')).join(' ');}
   function drawMap(){
+    renderMapNames();
     svg.replaceChildren(el('title',{},`${park.fullName}: connected roads and places. Use the place list below as an alternative.`));
     const terrain=el('g',{'aria-hidden':'true'});
     terrain.append(el('path',{d:'M60 430 Q90 100 360 240 T710 270 Q930 190 1080 400 L1130 1050 Q850 1080 700 900 T250 950 Q20 750 60 430Z',fill:park.colors?.land||(key==='joshua-tree'?'#dce2c7':'#e0cfac'),opacity:'.7'}));
@@ -104,11 +114,12 @@
       const leader=el('line',{class:'pin-leader',stroke:'#6b735f','stroke-opacity':'.65','pointer-events':'none'});
       const hit=el('circle',{r:22,fill:'transparent'}),circle=el('circle',{class:'pin-circle',r:12,fill:p.id===selected?'#f8dfbb':'#fffdf7',stroke:c.color,'stroke-width':2});
       const symbol=el('text',{class:'marker-symbol','text-anchor':'middle','dominant-baseline':'central','font-size':13},c.symbol);
+      const number=el('text',{class:'marker-number','text-anchor':'middle','aria-hidden':'true'},park.places.indexOf(p)+1);
       const label=el('text',{class:'marker-label','font-size':12,'aria-hidden':'true'},p.name);
-      g.append(el('title',{},`${p.name} · ${p.effort}`),leader,hit,circle,symbol,label);
+      g.append(el('title',{},`${p.name} · ${p.effort}`),leader,hit,circle,symbol,number,label);
       g.onclick=e=>{if(e.detail===0){select(p.id);$('place-detail').scrollIntoView({block:'nearest',behavior:'auto'});}};
       g.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();select(p.id);$('detail-title').tabIndex=-1;$('detail-title').focus();}};
-      svg.append(g);markers.push({p,g,leader,hit,circle,symbol,label});
+      svg.append(g);markers.push({p,g,leader,hit,circle,symbol,number,label});
     }
     updateCamera();
   }
@@ -122,7 +133,7 @@
     const matrix=svg.getScreenCTM();if(!matrix)return;
     const scale=matrix.a,unit=1/scale,frame=svg.getBoundingClientRect(),boxes=[];
     // Keep controls clear; favor the active place, planned stops, and entrances.
-    boxes.push({l:0,t:0,r:70,b:170},{l:frame.width-60,t:0,r:frame.width,b:80});
+    document.querySelectorAll('#map-frame .map-controls,#map-frame .north,#map-frame .expanded-close').forEach(control=>{const r=control.getBoundingClientRect();boxes.push({l:r.left-frame.left-4,t:r.top-frame.top-4,r:r.right-frame.left+4,b:r.bottom-frame.top+4});});
     const priority=[...markers].sort((a,b)=>score(b.p)-score(a.p));
     function score(p){return(p.id===selected?100:0)+(plan().stops.includes(p.id)?20:0)+(p.cat==='entrance'?10:0);}
     const placedPins=[];
@@ -131,9 +142,16 @@
       const screen=point.matrixTransform(matrix),sx=screen.x-frame.x,sy=screen.y-frame.y;
       let chosen={x:sx,y:sy};
       if(sx>=0&&sx<=frame.width&&sy>=0&&sy<=frame.height){
-        const candidates=[chosen];
-        for(let radius=28;radius<=196;radius+=28)for(let i=0;i<16;i++){const a=i*Math.PI/8;candidates.push({x:sx+Math.cos(a)*radius,y:sy+Math.sin(a)*radius});}
-        chosen=candidates.find(c=>c.x>=25&&c.x<=frame.width-25&&c.y>=25&&c.y<=frame.height-55&&!placedPins.some(q=>Math.hypot(c.x-q.x,c.y-q.y)<45)&&!boxes.some(b=>c.x+23>b.l&&c.x-23<b.r&&c.y+23>b.t&&c.y-23<b.b))||chosen;
+        const candidates=[];
+        if(frame.width<420){
+          // Fixed phone slots stay apart even when 33 places share a tiny overview.
+          for(let y=25;y<=frame.height-30;y+=45)for(let x=25;x<=frame.width-25;x+=45)candidates.push({x,y});
+          candidates.sort((a,b)=>Math.hypot(a.x-sx,a.y-sy)-Math.hypot(b.x-sx,b.y-sy));
+        }else{
+          candidates.push(chosen);
+          for(let radius=28;radius<=196;radius+=28)for(let i=0;i<16;i++){const a=i*Math.PI/8;candidates.push({x:sx+Math.cos(a)*radius,y:sy+Math.sin(a)*radius});}
+        }
+        chosen=candidates.find(c=>c.x>=25&&c.x<=frame.width-25&&c.y>=25&&c.y<=frame.height-(frame.width<420?30:55)&&!placedPins.some(q=>Math.hypot(c.x-q.x,c.y-q.y)<45)&&!boxes.some(b=>c.x+23>b.l&&c.x-23<b.r&&c.y+23>b.t&&c.y-23<b.b))||chosen;
         placedPins.push(chosen);boxes.push({l:chosen.x-15,t:chosen.y-15,r:chosen.x+15,b:chosen.y+15});
       }
       m.screen=chosen;
@@ -142,7 +160,8 @@
       m.leader.setAttribute('x1',-dx);m.leader.setAttribute('y1',-dy);m.leader.setAttribute('x2',0);m.leader.setAttribute('y2',0);m.leader.setAttribute('stroke-width',unit);
     }
     for(const m of priority){
-      const {p,hit,circle,symbol,label}=m;
+      const {p,hit,circle,symbol,number,label}=m;
+      number.setAttribute('x',15*unit);number.setAttribute('y',-12*unit);number.style.fontSize=`${10*unit}px`;number.style.strokeWidth=`${4*unit}px`;
       hit.setAttribute('r',22*unit);circle.setAttribute('r',12*unit);circle.setAttribute('stroke-width',2*unit);symbol.style.fontSize=`${13*unit}px`;label.setAttribute('font-size',11*unit);label.setAttribute('stroke-width',3.5*unit);
       const {x,y}=m.screen;
       label.style.display='';const width=label.getComputedTextLength()*scale,height=16;
@@ -197,7 +216,7 @@
   $('search').oninput=renderPlaces;$('clear-plan').onclick=()=>{plan().stops=[];routeChanged();};$('print-plan').onclick=()=>window.print();
   $('zoom-in').onclick=()=>centerZoom(1.35);$('zoom-out').onclick=()=>centerZoom(1/1.35);$('reset-map').onclick=reset;
   const expandButton=$('fullscreen'),toolbar=expandButton.parentElement;
-  expandButton.onclick=()=>{const expanded=$('map-frame').classList.toggle('expanded');expandButton.textContent=expanded?'Close map ×':'Expand map ⤢';expandButton.setAttribute('aria-expanded',String(expanded));(expanded?$('map-frame'):toolbar).append(expandButton);expandButton.style.cssText=expanded?'position:absolute;right:15px;bottom:18px;background:var(--card)':'';requestAnimationFrame(layoutLabels);};
+  expandButton.onclick=()=>{const expanded=$('map-frame').classList.toggle('expanded');expandButton.textContent=expanded?'Close map ×':'Expand map ⤢';expandButton.setAttribute('aria-expanded',String(expanded));expandButton.classList.toggle('expanded-close',expanded);(expanded?$('map-frame'):toolbar).append(expandButton);requestAnimationFrame(layoutLabels);};
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('map-frame').classList.contains('expanded')){expandButton.click();expandButton.focus();}});
   new ResizeObserver(()=>requestAnimationFrame(layoutLabels)).observe(svg);
   let beforePrintCamera;
