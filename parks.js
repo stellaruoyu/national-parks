@@ -7,6 +7,7 @@ globalThis.PARKS = (() => {
   const p=place;
   const jt={
     name:'Joshua Tree',fullName:'Joshua Tree National Park',kicker:'CALIFORNIA · TWO DESERTS, ONE GOOD DAY',
+    location:{city:'Joshua Tree',state:'California',source:'https://www.nps.gov/jotr/planyourvisit/directions.htm'},
     description:'Boulder gardens, wide-open skies, and trees like nowhere else. Find an entrance, choose a few favorites, and see how the whole park fits together.',
     condition:'Before you go: check road and trail closures. Black Rock and Indian Cove connect through CA-62, outside the park.',
     fieldNote:'Plan walks for cooler hours. Bring water, sun protection, and layers. Most of the park has limited cell service. Campground symbols show locations, not available sites.',
@@ -52,6 +53,7 @@ globalThis.PARKS = (() => {
   };
   const dv={
     name:'Death Valley',fullName:'Death Valley National Park',kicker:'CALIFORNIA & NEVADA · ROOM TO SEE SOMETHING BIG',
+    location:{city:'Death Valley Junction',state:'California',source:'https://www.nps.gov/deva/planyourvisit/directions.htm'},
     description:'Salt flats below sea level, sculpted dunes, and mountain overlooks. Connect a few nearby stops for a day that feels expansive, not exhausting.',
     condition:'Oct 18 snapshot: Texas Springs is seasonally closed; Stovepipe Wells camping is listed closed until Oct 23. Check NPS before traveling.',
     fieldNote:'Heat can make even a short walk demanding. Favor cooler months and cooler hours, carry water, and fuel up before long drives. Remote roads need suitable vehicles and preparation.',

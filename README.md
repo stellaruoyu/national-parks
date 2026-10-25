@@ -14,6 +14,7 @@ Then open `http://127.0.0.1:8766/`. Direct park links use `national-park-maps.ht
 
 ## Features
 
+- Each park title has a sourced **City, State** line identifying a nearby entrance town, not claiming that the entire park lies inside that town. Labels use Joshua Tree, California; Death Valley Junction, California; Holbrook, Arizona; and El Portal, California. Town references were checked against the linked NPS directions/regional pages on October 24, 2026; this does not refresh older road-condition snapshots.
 - One continuous access network per park: 30 Joshua Tree places, 24 Death Valley places, 20 Petrified Forest places, and 33 Yosemite places.
 - Roads, unpaved access, and walking connections have distinct line styles. Black Rock and Indian Cove connect through the outside highway; Artist’s Drive runs in the correct one-way direction.
 - Category symbols on every marker, search, quick entrance/campground filters, collision-aware labels, area zoom shortcuts, and a place list. Busy markers spread apart with leader lines to their map positions so phone tap targets do not overlap.

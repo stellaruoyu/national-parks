@@ -5,6 +5,7 @@
   const p=(id,name,cat,x,y,visit,effort,road,desc,note='')=>({id,name,cat,x,y,visit,effort,road,desc,note});
   const petrified={
     name:'Petrified Forest',fullName:'Petrified Forest National Park',code:'pefo',
+    location:{city:'Holbrook',state:'Arizona',source:'https://www.nps.gov/pefo/planyourvisit/directions.htm'},
     kicker:'ARIZONA · AN ANCIENT FOREST, A COLORFUL DAY',
     description:'Painted badlands, ancestral sites, and a forest turned to stone. Follow the north-to-south park road and choose a few short walks along the way.',
     condition:'Oct 20 source check: park road hours are 8 am–5 pm, Arizona Mountain Standard Time. Plan to leave before closing; check NPS for changes.',
@@ -54,6 +55,7 @@
 
   const yosemite={
     name:'Yosemite',fullName:'Yosemite National Park',code:'yose',
+    location:{city:'El Portal',state:'California',source:'https://www.nps.gov/yose/planyourvisit/gateways.htm'},
     kicker:'CALIFORNIA · GRANITE WALLS, MEADOWS & GIANT TREES',
     description:'Find your way from the entrances to the Valley, high-country roads, and giant sequoias. Choose one area for a relaxed first day, rather than trying to see everything.',
     condition:'Oct 20 snapshot: Tioga Road is scheduled to close Oct 21 at 5 pm for forecast snow. Glacier Point Road is listed open. Recheck NPS before every mountain-road trip.',

@@ -200,7 +200,7 @@
     $('map-regions').querySelectorAll('button').forEach(button=>button.onclick=()=>{const [x,y,w]=park.regions[Number(button.dataset.region)].box;camera={x,y,w,h:w*1100/1200};updateCamera();});
     document.body.dataset.park=key;document.title=`${park.name} — Park Days`;
     document.querySelector('.map-caption').textContent=`${park.name} · connected planning map · layout simplified`;
-    text('park-title',park.name);text('park-kicker',park.kicker);text('park-description',park.description);text('condition-summary',park.condition);text('field-note',park.fieldNote);$('conditions-link').href=park.sources.conditions;$('official-map').href=park.sources.map;$('search').value='';
+    text('park-title',park.name);text('park-location',`${park.location.city}, ${park.location.state}`);$('park-location').href=park.location.source;text('park-kicker',park.kicker);text('park-description',park.description);text('condition-summary',park.condition);text('field-note',park.fieldNote);$('conditions-link').href=park.sources.conditions;$('official-map').href=park.sources.map;$('search').value='';
     text('source-date',`Sources checked ${park.checked} · Condition notes are a dated snapshot, not a live feed.`);
     $('park-specific-note').hidden=!park.campingNote;
     $('park-specific-note').innerHTML=park.campingNote?`${escape(park.campingNote)} <a href="${park.sources.camping}" target="_blank" rel="noopener">NPS camping details ↗</a>`:'';

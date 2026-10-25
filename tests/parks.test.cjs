@@ -116,6 +116,13 @@ test('Four parks are registered and navigation is generated from the same catalo
   assert.equal(Object.keys(parks).length,4);
   for(const id of ['joshua-tree','death-valley','petrified-forest','yosemite'])assert.ok(parks[id]);
 });
+test('Every park provides a sourced nearby town in City, State order',()=>{
+  const expected={'joshua-tree':'Joshua Tree, California','death-valley':'Death Valley Junction, California','petrified-forest':'Holbrook, Arizona',yosemite:'El Portal, California'};
+  for(const [id,park] of Object.entries(parks)){
+    assert.equal(`${park.location.city}, ${park.location.state}`,expected[id]);
+    assert.match(park.location.source,/^https:\/\/www\.nps\.gov\//);
+  }
+});
 test('Petrified Forest shows no invented drive-in campgrounds and no driving shortcuts to hikes',()=>{
   const park=parks['petrified-forest'];
   assert.equal(park.places.filter(p=>p.cat==='campground').length,0);
