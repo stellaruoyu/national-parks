@@ -1,6 +1,6 @@
 # Rubric 3 — visitor planning and optional details
 
-Approved for the next map update. Saved separately from RUBRIC.md to preserve the earlier rubric. Publishing this rubric does not itself change the maps.
+Active rubric for the six-park map update. Saved separately from RUBRIC.md to preserve the earlier rubric. See REVIEW.md for the implementation checks and self-assessment.
 
 ## Who and when
 

@@ -5,6 +5,8 @@ const vm = require('node:vm');
 const context = vm.createContext({});
 vm.runInContext(fs.readFileSync(require('node:path').join(__dirname, '../parks.js'), 'utf8'), context);
 vm.runInContext(fs.readFileSync(require('node:path').join(__dirname, '../new-parks.js'), 'utf8'), context);
+vm.runInContext(fs.readFileSync(require('node:path').join(__dirname, '../sierra-parks.js'), 'utf8'), context);
+vm.runInContext(fs.readFileSync(require('node:path').join(__dirname, '../place-details.js'), 'utf8'), context);
 const parks = context.PARKS;
 const planning = require('../planning.js');
 
@@ -112,12 +114,12 @@ test('All area shortcuts stay on the connected map and all places link to a sour
   }
 });
 
-test('Four parks are registered and navigation is generated from the same catalog',()=>{
-  assert.equal(Object.keys(parks).length,4);
-  for(const id of ['joshua-tree','death-valley','petrified-forest','yosemite'])assert.ok(parks[id]);
+test('Six parks are registered and navigation is generated from the same catalog',()=>{
+  assert.equal(Object.keys(parks).length,6);
+  for(const id of ['joshua-tree','death-valley','petrified-forest','yosemite','sequoia','kings-canyon'])assert.ok(parks[id]);
 });
 test('Every park provides a sourced nearby town in City, State order',()=>{
-  const expected={'joshua-tree':'Joshua Tree, California','death-valley':'Death Valley Junction, California','petrified-forest':'Holbrook, Arizona',yosemite:'El Portal, California'};
+  const expected={'joshua-tree':'Joshua Tree, California','death-valley':'Death Valley Junction, California','petrified-forest':'Holbrook, Arizona',yosemite:'El Portal, California',sequoia:'Three Rivers, California','kings-canyon':'Dunlap, California'};
   for(const [id,park] of Object.entries(parks)){
     assert.equal(`${park.location.city}, ${park.location.state}`,expected[id]);
     assert.match(park.location.source,/^https:\/\/www\.nps\.gov\//);
@@ -154,4 +156,32 @@ test('Yosemite Glacier Point uses its road approach, and known closed camps rema
   const route=planning.path(park,'welcome','glacier');
   assert.ok(route.edges.some(i=>park.edges[i][0]==='chinquapin'));
   for(const id of ['craneCamp','tuolumneCamp','bridalCamp','lowerPines'])assert.equal(planning.estimate(park,['arch',id,'arch'],45).unavailable,true);
+});
+test('Rubric 3: every place in all six parks has advice and a linked fact',()=>{
+  for(const park of Object.values(parks))for(const p of park.places){
+    assert.ok(p.more.recommended.length>20,`missing recommendation: ${p.id}`);
+    assert.ok(p.more.skip.length>20,`missing skip reason: ${p.id}`);
+    assert.ok(p.more.fact.length>20,`missing fact: ${p.id}`);
+    assert.match(p.more.source,/^https:\/\/www\.nps\.gov\//);
+    assert.equal(p.more.checked,'October 27, 2026');
+    if(['closed','uncertain'].includes(p.status))assert.match(p.more.skip,/closed|unconfirmed/);
+  }
+});
+test('Sequoia: Congress Trail includes Sherman approach once; closed cave road is not routed',()=>{
+  const park=parks.sequoia;
+  assert.equal(planning.estimate(park,['congress'],45).visit,180);
+  assert.equal(planning.estimate(park,['sherman','congress'],45).visit,180);
+  assert.equal(planning.path(park,'ash','cave'),null);
+  assert.equal(planning.estimate(park,['ash','dorst','ash'],45).unavailable,true);
+});
+test('Kings Canyon: Cedar Grove connects through the outside forest corridor, not an invented shortcut',()=>{
+  const park=parks['kings-canyon'];
+  assert.ok(planning.path(park,'bigStump','roadsEnd').edges.some(i=>park.edges[i][0]==='forestJ'));
+  assert.equal(park.neighbor.key,'sequoia');assert.equal(parks.sequoia.neighbor.key,'kings-canyon');
+  for(const id of ['sunset','crystal','sentinel','sheepCreek','moraine'])assert.equal(planning.estimate(park,[id],45).unavailable,true);
+});
+test('Updated condition snapshots do not retain expired Stovepipe or Lower Pines notices',()=>{
+  assert.notEqual(parks['death-valley'].places.find(p=>p.id==='stovepipeCamp').status,'closed');
+  assert.equal(parks.yosemite.places.find(p=>p.id==='lowerPines').status,'closed');
+  assert.equal(parks.yosemite.places.find(p=>p.id==='northPines').status,'closed');
 });

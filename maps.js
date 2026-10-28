@@ -24,6 +24,12 @@
   const coords=id=>park.junctions[id]||[find(id).x,find(id).y];
   const same=(pair,a,b)=>pair[0]===a&&pair[1]===b;
   const range=(low,high)=>low===high?duration(low):`${duration(low)}–${duration(high)}`;
+  const openInformation=new Set();
+  function information(p,scope){
+    const id=`more-${scope}-${key}-${p.id}`,open=openInformation.has(id),m=p.more;
+    return `<div class="more-information"><button type="button" class="quiet more-toggle" data-more="${id}" aria-controls="${id}" aria-expanded="${open}" aria-label="${open?'Less':'More'} information about ${escape(p.name)}">${open?'Less':'More'} information</button><div id="${id}" class="extra-information" ${open?'':'hidden'}><p><strong>Recommended if…</strong> ${escape(m.recommended)}</p><p><strong>Consider skipping if…</strong> ${escape(m.skip)}</p><p><strong>Fun fact</strong> ${escape(m.fact)}</p><a href="${m.source}" target="_blank" rel="noopener">NPS fact source ↗</a><p class="small">Fact checked ${m.checked}. Recommendations are editorial advice, not NPS endorsements.</p></div></div>`;
+  }
+  function wireInformation(root){root.querySelectorAll('[data-more]').forEach(button=>button.onclick=()=>{const id=button.dataset.more,open=button.getAttribute('aria-expanded')!=='true';button.setAttribute('aria-expanded',String(open));button.textContent=open?'Less information':'More information';const name=button.getAttribute('aria-label').replace(/^(More|Less) information about /,'');button.setAttribute('aria-label',`${open?'Less':'More'} information about ${name}`);$(id).hidden=!open;open?openInformation.add(id):openInformation.delete(id);});}
   function plan(){return plans[key];}
   function persist(){try{localStorage.setItem(STORE,JSON.stringify(plans));storageOK=true;}catch{storageOK=false;}text('save-status',storageOK?'Your stops are saved on this device.':'Stops stay available this session; device storage is unavailable.');}
   function routeChanged(){plan().preset='custom';persist();renderPlan();renderPlaces();renderDetail();drawMap();}
@@ -44,14 +50,14 @@
     else if(park.maxDayMinutes&&(result.high>park.maxDayMinutes||current.budget>park.maxDayMinutes)){budget.textContent=`The checked park road hours allow ${duration(park.maxDayMinutes)} maximum (8 am–5 pm). Start early and shorten any plan that will not finish before closing.`;budget.classList.add('over');}
     else if(result.high>current.budget){budget.textContent=`Allow up to ${duration(result.high)}. That exceeds your ${duration(current.budget)} day; remove a stop or allow longer.`;budget.classList.add('over');}
     else budget.textContent=`Fits your ${duration(current.budget)} day, with about ${duration(current.budget-result.high)} to spare at the upper estimate.`;
-    $('trip-stops').innerHTML=current.stops.map((id,i)=>{const p=find(id),leg=legs[i];return `<li><div class="trip-stop-head"><span class="stop-number">${i+1}</span><button class="stop-link" data-select="${id}">${escape(p.name)}</button></div><p class="stop-time">${i?(leg?legLabel(leg):'No available road connection'):'Start here'} · ${p.visit?`~${duration(p.visit)} visit`:'access point'}</p>${p.note?`<details class="stop-context"><summary>${blocked(p)?'Access status — see NPS note':p.cat==='campground'?'Camping & access note':'Visit & access note'}</summary><p>${escape(p.note)}</p><a href="${p.statusSource||p.source}" target="_blank" rel="noopener">Check NPS ↗</a></details>`:''}<div class="stop-tools"><button data-up="${i}" aria-label="Move ${escape(p.name)} up" ${i===0?'disabled':''}>↑</button><button data-down="${i}" aria-label="Move ${escape(p.name)} down" ${i===current.stops.length-1?'disabled':''}>↓</button><button data-remove="${i}" aria-label="Remove ${escape(p.name)}">Remove</button></div></li>`;}).join('');
+    $('trip-stops').innerHTML=current.stops.map((id,i)=>{const p=find(id),leg=legs[i];return `<li><div class="trip-stop-head"><span class="stop-number">${i+1}</span><button class="stop-link" data-select="${id}">${escape(p.name)}</button></div><p class="stop-time">${i?(leg?legLabel(leg):'No available road connection'):'Start here'} · ${p.visit?`~${duration(p.visit)} visit`:'access point'}</p>${p.note?`<div class="stop-context"><p><strong>Access note:</strong> ${escape(p.note)}</p><a href="${p.statusSource||p.source}" target="_blank" rel="noopener">Check NPS ↗</a></div>`:''}<div class="stop-tools"><button data-up="${i}" aria-label="Move ${escape(p.name)} up" ${i===0?'disabled':''}>↑</button><button data-down="${i}" aria-label="Move ${escape(p.name)} down" ${i===current.stops.length-1?'disabled':''}>↓</button><button data-remove="${i}" aria-label="Remove ${escape(p.name)}">Remove</button></div></li>`;}).join('');
     const notes=[];
     if(unreachable)notes.push('A selected stop or connection is closed or needs confirmation in the source snapshot. Remove it and check NPS.');
     if(park.planningNote)notes.push(park.planningNote);
     if(result.shuttle)notes.push('Shuttle and waiting allowances are counted separately from driving. Check operating hours; missed or suspended shuttles need a different plan.');
     if(current.stops.some(id=>id==='racetrack'))notes.push('Racetrack is a separate remote excursion, not a quick add-on to a day trip.');
     if(current.stops.some(id=>find(id).cat==='campground'))notes.push('Camp visits are scouting time only; overnight stays and reservations are not included.');
-    if(key==='death-valley'&&current.stops.some(id=>id==='texas'||id==='stovepipeCamp'))notes.push('Seasonal campground closure in the Oct 19 snapshot: check the selected campground’s NPS details before planning a stay.');
+    if(key==='death-valley'&&current.stops.some(id=>id==='texas'))notes.push('Texas Springs camping is seasonally closed in the October 27 source check.');
     if(result.implicit.length)notes.push(`Includes ${result.implicit.map(id=>find(id).name).join(', ')} access time so the approach walk is not forgotten.`);
     if(current.stops.length&&find(current.stops[0]).cat!=='entrance')notes.push('Your arrival drive is not included: start with an entrance or access point.');
     if(current.stops.length&&find(current.stops.at(-1)).cat!=='entrance')notes.push('Your departure drive is not included: end with an entrance or access point.');
@@ -65,6 +71,7 @@
     const p=find(selected),c=CATS[p.cat],saved=plan().stops.includes(p.id);
     $('place-detail').innerHTML=`<div class="detail-top"><div><p class="detail-type">${c.symbol} ${escape(c.name)}</p><h3 id="detail-title">${escape(p.name)}</h3></div><button type="button" id="detail-add" class="primary ${saved?'saved':''}" ${blocked(p)&&!saved?'disabled':''}>${saved?'✓ In your day':p.status==='closed'?'Closed in NPS snapshot':p.status==='uncertain'?'Confirm with NPS':'+ Add to my day'}</button></div><div class="metrics"><span>${p.visit?`~${duration(p.visit)} visit`:'Arrival / departure'}</span><span>${escape(p.effort)}</span><span>${escape(p.road)}</span></div><p>${escape(p.desc)}</p>${p.note?`<p class="access-note">${escape(p.note)}</p>`:''}<a class="source" target="_blank" rel="noopener" href="${p.statusSource||p.source}">NPS ${blocked(p)?'access':p.cat==='campground'?'camping':'visitor'} information ↗</a><p class="small">Checked ${park.checked}. Visit allowances include walking; driving and shuttle allowances are estimated separately.</p>`;
     $('detail-add').onclick=()=>toggleStop(p.id);
+    $('place-detail').insertAdjacentHTML('beforeend',information(p,'detail'));wireInformation($('place-detail'));
   }
   function select(id,focusMap=false){
     selected=id;visible.add(find(id).cat);renderDetail();renderLegend();renderPlaces();drawMap();
@@ -83,6 +90,7 @@
     $('place-list').innerHTML=places.length?places.map(p=>`<article class="place-card"><p class="detail-type">${CATS[p.cat].symbol} ${escape(CATS[p.cat].name)}</p><h3>${escape(p.name)}</h3><p class="card-meta">${p.visit?`~${duration(p.visit)}`:'Access point'} · ${escape(p.effort)}</p><p>${escape(p.desc)}</p>${blocked(p)?`<p class="notice">${p.statusLabel} · <a href="${p.statusSource}" target="_blank" rel="noopener">Check status ↗</a></p>`:''}<div class="card-actions"><button class="quiet" data-view="${p.id}">Find on map ↗</button><button class="quiet ${plan().stops.includes(p.id)?'saved':''}" data-add="${p.id}" ${blocked(p)&&!plan().stops.includes(p.id)?'disabled':''}>${plan().stops.includes(p.id)?'✓ Saved':p.status==='closed'?'Closed — check NPS':p.status==='uncertain'?'Confirm with NPS':'+ Add stop'}</button></div></article>`).join(''):`<p class="muted">${escape(emptyMessage)}</p>`;
     $('place-list').querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>{select(b.dataset.view,true);renderPlaces();});
     $('place-list').querySelectorAll('[data-add]').forEach(b=>b.onclick=()=>toggleStop(b.dataset.add));
+    $('place-list').querySelectorAll('.place-card').forEach((card,i)=>{const p=places[i];if(p.note&&!blocked(p))card.querySelector('.card-actions').insertAdjacentHTML('beforebegin',`<p class="access-note">${escape(p.note)}</p>`);card.insertAdjacentHTML('beforeend',information(p,'card'));});wireInformation($('place-list'));
   }
   function edgePoints(edge){const [a,b,,,bends=[]]=edge;return [coords(a),...bends,coords(b)].map(p=>p.join(',')).join(' ');}
   function drawMap(){
@@ -204,6 +212,7 @@
     text('source-date',`Sources checked ${park.checked} · Condition notes are a dated snapshot, not a live feed.`);
     $('park-specific-note').hidden=!park.campingNote;
     $('park-specific-note').innerHTML=park.campingNote?`${escape(park.campingNote)} <a href="${park.sources.camping}" target="_blank" rel="noopener">NPS camping details ↗</a>`:'';
+    if(park.neighbor){$('park-specific-note').hidden=false;$('park-specific-note').insertAdjacentHTML('beforeend',`<span class="neighbor-note">${escape(park.neighbor.note)} <a href="#${park.neighbor.key}">Open ${escape(park.neighbor.name)} map →</a></span>`);}
     $('shuttle-key').hidden=!park.edges.some(edge=>edge[3]==='shuttle');
     document.querySelectorAll('[data-park]').forEach(a=>{if(a.tagName!=='A')return;if(a.dataset.park===key)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});
     $('source-links').innerHTML=Object.entries(park.sources).map(([name,url])=>`<a href="${url}" target="_blank" rel="noopener">NPS ${name} ↗</a>`).join('');

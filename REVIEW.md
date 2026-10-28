@@ -1,4 +1,47 @@
-# Visitor-focused review — updated October 20, 2026
+# Visitor-focused review — updated October 27, 2026
+
+## Current review against Rubric 3
+
+This section supersedes the historical scores below. These are author self-assessments, not independent grades or evidence from a visitor study. The rubric has not been changed to increase the score.
+
+| Criterion | Joshua Tree | Death Valley | Petrified Forest | Yosemite | Sequoia | Kings Canyon |
+|---|---:|---:|---:|---:|---:|---:|
+| Find things quickly | 4/5 | 4/5 | 4/5 | 4/5 | 4/5 | 4/5 |
+| Choose a realistic visit | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 |
+| Trust and learn | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 |
+| Comfortable and appealing to use | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 |
+| **Total** | **19/20** | **19/20** | **19/20** | **19/20** | **19/20** | **19/20** |
+
+The remaining point reflects the extra lookup step on phones: overview markers use numbers matched to a scrollable name list, rather than putting every name directly on the small map. Search, area shortcuts, and expanded view help, but do not eliminate that step. The same shared display is used by all six maps.
+
+All 145 marked places now have optional recommendations, meaningful reasons to consider skipping, and an NPS-linked fact or useful practical detail. These begin hidden and toggle with **More information / Less information**, including keyboard activation and screen-reader expanded state. Essential effort, time, access restrictions, and safety notes remain outside the optional section, including within the trip planner. Closed places cannot be newly added. Recommendations are clearly editorial advice.
+
+Sequoia and Kings Canyon each add 19 places and three connected suggested trips. Reciprocal park links describe the actual Generals Highway connection through national forest. Cross-park totals are explicitly separate. Cedar Grove is a seasonal out-and-back ending at Roads End; Mineral King is outside the Sequoia map's stated main-corridor scope. Congress Trail includes the Sherman approach once, even if Sherman is not separately selected. Current-condition links and October 27 source-check dates remain visible.
+
+### Verification
+
+- 36 automated data/planning checks pass, including all six networks, the new walking approaches, closed cave access, seasonal camp closures, and every place's recommendation/fact fields.
+- Desktop browser checks covered both new maps, direct park links, more/less toggles, keyboard activation, and a Cedar Grove preset warning when the upper estimate exceeds a six-hour day.
+- Phone checks covered Kings Canyon at 390 × 844 and Sequoia at 320 × 740. Each exposed 19 numbered names; there was no horizontal page overflow. Sequoia's actual pin centers remained at least 45 CSS pixels apart, and name buttons were at least 44 pixels high. These are browser checks, not physical-device gesture tests.
+- Existing maps exposed 30/24/20/33 place cards with an initially closed information button on every card. No access notes remained folded in the planned stops. Browser error/warning logs were empty.
+
+### One honest weakness per park
+
+- **Joshua Tree:** a small whole-park overview needs the numbered list to identify crowded places.
+- **Death Valley:** remote-road travel allowances cannot predict damage, weather, or an unsuitable vehicle.
+- **Petrified Forest:** simplified Blue Mesa road geometry cannot provide navigation or accurate distances.
+- **Yosemite:** parking and shuttle queues can exceed the static allowances.
+- **Sequoia:** the map covers the main foothills–Giant Forest–Lodgepole corridor, not Mineral King or every park district.
+- **Kings Canyon:** the seasonal Cedar Grove drive can remain open while visitor services and camps are closed; the notes require a travel-date recheck.
+
+### New-park primary sources
+
+- [SEKI official maps](https://www.nps.gov/seki/planyourvisit/maps.htm)
+- [Road conditions](https://www.nps.gov/seki/planyourvisit/road-conditions.htm) and [current conditions](https://www.nps.gov/seki/planyourvisit/conditions.htm)
+- [Giant Forest walks](https://www.nps.gov/seki/planyourvisit/gfdayhikesum.htm), [Grant Grove walks](https://www.nps.gov/seki/planyourvisit/ggdayhikesum.htm), and [Cedar Grove walks](https://www.nps.gov/seki/planyourvisit/cgdayhikesum.htm)
+- [General Sherman Tree](https://www.nps.gov/seki/learn/nature/sherman.htm), [Grant Grove](https://www.nps.gov/seki/grant-grove.htm), and [Cedar Grove](https://www.nps.gov/seki/planyourvisit/cedar-grove.htm)
+
+## Historical review — October 20, earlier rubric
 
 This is an author self-assessment against the existing RUBRIC.md, not an independent grade or a claim that the maps are perfect geographic navigation products. The rubric has not been relaxed to increase the scores.
 
