@@ -12,14 +12,24 @@
   const duration=m=>m>=60?`${Math.floor(m/60)}h${m%60?' '+m%60+'m':''}`:`${m}m`;
   const el=(tag,attrs={},content)=>{const n=document.createElementNS(NS,tag);for(const [k,v]of Object.entries(attrs))n.setAttribute(k,v);if(content!==undefined)n.textContent=content;return n;};
   const find=id=>park.places.find(p=>p.id===id);
-  const nameIndex=document.createElement('section');nameIndex.className='map-name-index';nameIndex.setAttribute('aria-label','Numbered map place names');
+  let mapNamesOpen=false;
+  const nameIndex=document.createElement('section');nameIndex.className='map-name-index';nameIndex.setAttribute('aria-label','Selected place and map names');
   $('map-frame').insertBefore(nameIndex,document.querySelector('.map-caption'));
   function renderMapNames(){
     const scrollTop=nameIndex.querySelector('.map-name-list')?.scrollTop||0;
     const shown=park.places.filter(p=>visible.has(p.cat));
-    nameIndex.innerHTML=`<p class="name-index-heading">Map names · ${shown.length} places <span>Scroll names · tap to locate</span></p><div class="map-name-list">${shown.map(p=>`<button type="button" data-map-name="${p.id}" aria-pressed="${p.id===selected}"><span class="place-number">${park.places.indexOf(p)+1}</span><span aria-hidden="true">${CATS[p.cat].symbol}</span><span>${escape(p.name)}</span></button>`).join('')||`<p>${escape(visible.size===1&&visible.has('campground')&&park.campingNote?park.campingNote:'No places in these categories. Change the filters below.')}</p>`}</div>`;
+    const chosen=find(selected),shownSelection=chosen&&visible.has(chosen.cat);
+    nameIndex.classList.toggle('browsing',mapNamesOpen);
+    nameIndex.innerHTML=`<div class="map-selection" aria-live="polite" aria-atomic="true" ${mapNamesOpen?'hidden':''}>${shownSelection?`<h3>${CATS[chosen.cat].symbol} ${escape(chosen.name)}</h3><p>${blocked(chosen)?escape(chosen.statusLabel):`${chosen.visit?`~${duration(chosen.visit)} visit`:'Access point'} · ${escape(chosen.effort)}`}</p>`:'<h3>Tap a symbol to see its name</h3><p>Choose a place directly on the map, or browse the names.</p>'}</div><p class="name-index-heading" ${mapNamesOpen?'':'hidden'}>All map names · ${shown.length} places</p><div class="map-selection-actions"><button type="button" class="quiet" data-map-details ${!shownSelection||mapNamesOpen?'hidden':''}>View details</button><button type="button" class="quiet" data-map-browse aria-expanded="${mapNamesOpen}" aria-controls="map-name-list">${mapNamesOpen?'Back to selected place':`Browse all ${shown.length} places`}</button></div><div id="map-name-list" class="map-name-list" ${mapNamesOpen?'':'hidden'}>${shown.map(p=>`<button type="button" data-map-name="${p.id}" aria-pressed="${p.id===selected}"><span class="place-number">${park.places.indexOf(p)+1}</span><span aria-hidden="true">${CATS[p.cat].symbol}</span><span>${escape(p.name)}</span></button>`).join('')||`<p>${escape(visible.size===1&&visible.has('campground')&&park.campingNote?park.campingNote:'No places in these categories. Change the filters below.')}</p>`}</div>`;
     nameIndex.querySelector('.map-name-list').scrollTop=scrollTop;
-    nameIndex.querySelectorAll('button').forEach(b=>b.onclick=()=>{const expanded=$('map-frame').classList.contains('expanded');select(b.dataset.mapName,!expanded);if(expanded){const p=find(b.dataset.mapName);camera={x:p.x-220,y:p.y-200,w:440,h:400};updateCamera();svg.focus({preventScroll:true});}});
+    nameIndex.querySelector('[data-map-browse]').onclick=()=>{mapNamesOpen=!mapNamesOpen;renderMapNames();nameIndex.querySelector('[data-map-browse]').focus({preventScroll:true});};
+    nameIndex.querySelector('[data-map-details]').onclick=()=>{if($('map-frame').classList.contains('expanded'))$('fullscreen').click();$('detail-title').tabIndex=-1;$('detail-title').focus({preventScroll:true});$('place-detail').scrollIntoView({block:'start',behavior:'auto'});};
+    nameIndex.querySelectorAll('[data-map-name]').forEach(b=>b.onclick=()=>{mapNamesOpen=false;const expanded=$('map-frame').classList.contains('expanded');select(b.dataset.mapName,!expanded);if(expanded){const p=find(b.dataset.mapName);camera={x:p.x-220,y:p.y-200,w:440,h:400};updateCamera();svg.focus({preventScroll:true});}});
+  }
+  function activateMarker(id,keyboard=false){
+    mapNamesOpen=false;select(id);
+    if(window.matchMedia('(max-width:760px)').matches){const bounds=$('map-frame').getBoundingClientRect();if(bounds.top<0||bounds.bottom>window.innerHeight)$('map-frame').scrollIntoView({block:'center',behavior:'auto'});if(keyboard)svg.querySelector(`[data-place="${id}"]`)?.focus({preventScroll:true});}
+    else{$('place-detail').scrollIntoView({block:'nearest',behavior:'auto'});if(keyboard){$('detail-title').tabIndex=-1;$('detail-title').focus();}}
   }
   const coords=id=>park.junctions[id]||[find(id).x,find(id).y];
   const same=(pair,a,b)=>pair[0]===a&&pair[1]===b;
@@ -118,15 +128,15 @@
     const sorted=[...park.places].sort((a,b)=>(a.id===selected?1:0)-(b.id===selected?1:0));
     for(const p of sorted){
       if(!visible.has(p.cat))continue;
-      const c=CATS[p.cat],g=el('g',{class:'marker',role:'button',tabindex:'0','aria-label':`View ${p.name}`,transform:`translate(${p.x} ${p.y})`,'data-place':p.id});
+      const c=CATS[p.cat],g=el('g',{class:'marker',role:'button',tabindex:'0','aria-label':`View ${p.name}`,'aria-pressed':String(p.id===selected),transform:`translate(${p.x} ${p.y})`,'data-place':p.id});
       const leader=el('line',{class:'pin-leader',stroke:'#6b735f','stroke-opacity':'.65','pointer-events':'none'});
       const hit=el('circle',{r:22,fill:'transparent'}),circle=el('circle',{class:'pin-circle',r:12,fill:p.id===selected?'#f8dfbb':'#fffdf7',stroke:c.color,'stroke-width':2});
       const symbol=el('text',{class:'marker-symbol','text-anchor':'middle','dominant-baseline':'central','font-size':13},c.symbol);
       const number=el('text',{class:'marker-number','text-anchor':'middle','aria-hidden':'true'},park.places.indexOf(p)+1);
       const label=el('text',{class:'marker-label','font-size':12,'aria-hidden':'true'},p.name);
       g.append(el('title',{},`${p.name} · ${p.effort}`),leader,hit,circle,symbol,number,label);
-      g.onclick=e=>{if(e.detail===0){select(p.id);$('place-detail').scrollIntoView({block:'nearest',behavior:'auto'});}};
-      g.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();select(p.id);$('detail-title').tabIndex=-1;$('detail-title').focus();}};
+      g.onclick=e=>{if(e.detail===0)activateMarker(p.id,true);};
+      g.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();e.stopPropagation();activateMarker(p.id,true);}};
       svg.append(g);markers.push({p,g,leader,hit,circle,symbol,number,label});
     }
     updateCamera();
@@ -194,13 +204,13 @@
     else{pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});const[a,b]=[...pointers.values()],distance=Math.hypot(a.x-b.x,a.y-b.y);if(lastDistance>0&&distance>0)zoom(distance/lastDistance,(a.x+b.x)/2,(a.y+b.y)/2);lastDistance=distance;dragged=true;}
   });
   function release(e){pointers.delete(e.pointerId);lastDistance=0;if(!pointers.size)svg.classList.remove('dragging');}
-  svg.addEventListener('pointerup',e=>{if(!dragged&&pendingMarker&&pointers.size===1){select(pendingMarker);$('place-detail').scrollIntoView({block:'nearest',behavior:'auto'});}pendingMarker=null;release(e);});svg.addEventListener('pointercancel',release);svg.addEventListener('lostpointercapture',release);
+  svg.addEventListener('pointerup',e=>{if(!dragged&&pendingMarker&&pointers.size===1)activateMarker(pendingMarker);pendingMarker=null;release(e);});svg.addEventListener('pointercancel',release);svg.addEventListener('lostpointercapture',release);
   svg.addEventListener('wheel',e=>{e.preventDefault();zoom(Math.exp(-Math.max(-150,Math.min(150,e.deltaY))*.002),e.clientX,e.clientY);},{passive:false});
   svg.addEventListener('keydown',e=>{const actions={ArrowLeft:()=>camera.x-=camera.w*.1,ArrowRight:()=>camera.x+=camera.w*.1,ArrowUp:()=>camera.y-=camera.h*.1,ArrowDown:()=>camera.y+=camera.h*.1,'+':()=>centerZoom(1.3),'=':()=>centerZoom(1.3),'-':()=>centerZoom(1/1.3),'0':reset};if(actions[e.key]){e.preventDefault();actions[e.key]();updateCamera();}});
   function reset(){camera={x:0,y:0,w:1200,h:1100};updateCamera();}
   function openPark(){
     const hash=location.hash.slice(1);if(!PARKS[hash]&&hash==='explore')return;
-    key=PARKS[hash]?hash:'joshua-tree';park=PARKS[key];selected=park.featured;visible=new Set(Object.keys(CATS));camera={x:0,y:0,w:1200,h:1100};
+    key=PARKS[hash]?hash:'joshua-tree';park=PARKS[key];selected=park.featured;mapNamesOpen=false;visible=new Set(Object.keys(CATS));camera={x:0,y:0,w:1200,h:1100};
     const old=plans[key];if(!old||!Array.isArray(old.stops))plans[key]={stops:[...park.presets[0].stops],preset:park.presets[0].id};else plans[key]={stops:old.stops.filter(id=>park.places.some(p=>p.id===id)),preset:typeof old.preset==='string'?old.preset:'custom'};
     plan().budget=[240,360,480,600].includes(old?.budget)?old.budget:360;plan().breaks=[30,45,60,90].includes(old?.breaks)?old.breaks:45;
     $('day-budget').value=String(plan().budget);$('break-time').value=String(plan().breaks);

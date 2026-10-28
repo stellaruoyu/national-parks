@@ -20,7 +20,7 @@ Then open `http://127.0.0.1:8766/`. Direct park links use `national-park-maps.ht
 - Sequoia and Kings Canyon have reciprocal links identifying their shared Generals Highway connection through national forest. Each map has three suggested trips. Sequoia focuses on the main foothills–Giant Forest–Lodgepole corridor; Mineral King is explicitly separate. Kings Canyon includes the seasonal road to Cedar Grove and Roads End, with no invented road across the Sierra.
 - Roads, unpaved access, and walking connections have distinct line styles. Black Rock and Indian Cove connect through the outside highway; Artist’s Drive runs in the correct one-way direction.
 - Category symbols on every marker, search, quick entrance/campground filters, collision-aware labels, area zoom shortcuts, and a place list. Busy markers spread apart with leader lines to their map positions so phone tap targets do not overlap.
-- On phones, numbered markers match a scrollable full-name list directly below the map, including expanded view. Tapping a name locates its place; filters update both the markers and list. The close button sits above the map, separate from its caption.
+- On phones, tapping a marker shows its full name, visit effort/time or closure status inside the map, without scrolling away. **View details** opens the full information; **Browse all places** opens the optional full-name list. Both work in normal and expanded views. Tapping a listed name locates its place; filters update the markers and list. Keyboard selection keeps focus on the chosen marker. The close button sits above the map, separate from its caption.
 - Drag, wheel/pinch zoom, zoom buttons, reset, keyboard controls (arrows, +/−, 0), and an expanded map view (Escape closes it).
 - Three suggested itineraries per park; add, remove, and reorder stops. Route highlighting follows the access network. Driving allowances have a 30% upper buffer, and day totals include a selected break allowance and an upper allowance for time at stops. Choose a 4/6/8/10-hour day to see whether the plan fits. These are editorial ranges, not sourced traffic predictions or statistical confidence intervals.
 - Separate saved plans for all six parks, stored on the current device when browser storage is available. Existing saved plans retain their storage key. Print/save using the browser’s print dialog.
@@ -42,13 +42,13 @@ Sources and condition notes were reviewed October 27, 2026. Source pages may hav
 
 ## Honest limitations
 
-- Joshua Tree: some labels yield to others at whole-park scale. The area shortcuts and searchable list provide access to every name; the map remains continuous.
+- Joshua Tree: some labels yield to others at whole-park scale. Tapping a marker identifies it directly; area shortcuts and search also provide access to every name.
 - Death Valley: static time ranges help plan a day, but they cannot account for a new closure or current traffic. Use the linked official map for actual distances and check conditions for the travel date.
 - Petrified Forest: simplified road geometry is useful for choosing stops, not measuring distances or navigating the Blue Mesa loop.
 - Yosemite: seasonal roads, parking queues, and shuttle availability can change the plan substantially. The static map cannot replace a same-day conditions check.
 - Sequoia: the main corridor map omits Mineral King; it is not a complete map of every district. Mountain road delays can exceed the planning buffer.
 - Kings Canyon: Cedar Grove is a long seasonal out-and-back. An open road does not mean visitor services or campgrounds are open; check the dated notes.
-- Small phone overviews use numbered symbols rather than squeezing in every full label. Read the matching name list or tap a name to locate it; fine leader lines preserve each place's map position.
+- Small phone overviews use numbered symbols rather than squeezing in every full label. Tap a symbol to see its full name inside the map; the number list remains an optional alternative. Fine leader lines preserve each place's map position.
 
 See `REVIEW.md` for the rubric assessment and verification record.
 

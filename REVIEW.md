@@ -6,13 +6,13 @@ This section supersedes the historical scores below. These are author self-asses
 
 | Criterion | Joshua Tree | Death Valley | Petrified Forest | Yosemite | Sequoia | Kings Canyon |
 |---|---:|---:|---:|---:|---:|---:|
-| Find things quickly | 4/5 | 4/5 | 4/5 | 4/5 | 4/5 | 4/5 |
+| Find things quickly | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 |
 | Choose a realistic visit | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 |
 | Trust and learn | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 |
 | Comfortable and appealing to use | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 | 5/5 |
-| **Total** | **19/20** | **19/20** | **19/20** | **19/20** | **19/20** | **19/20** |
+| **Total** | **20/20** | **20/20** | **20/20** | **20/20** | **20/20** | **20/20** |
 
-The remaining point reflects the extra lookup step on phones: overview markers use numbers matched to a scrollable name list, rather than putting every name directly on the small map. Search, area shortcuts, and expanded view help, but do not eliminate that step. The same shared display is used by all six maps.
+The earlier 19/20 assessment deducted one point for requiring phone visitors to match marker numbers to a separate name list. That lookup is now optional: tapping any symbol shows the full name directly inside the map, together with visit time/effort or the closure status, without scrolling away. **View details** opens the full place information; **Browse all places** provides the alternative name list. Keyboard activation retains focus on the selected marker. This fixes the deducted issue across all six parks without changing the rubric. Full marks describe this stated first-visit planning rubric, not perfect navigation or the absence of trade-offs.
 
 All 145 marked places now have optional recommendations, meaningful reasons to consider skipping, and an NPS-linked fact or useful practical detail. These begin hidden and toggle with **More information / Less information**, including keyboard activation and screen-reader expanded state. Essential effort, time, access restrictions, and safety notes remain outside the optional section, including within the trip planner. Closed places cannot be newly added. Recommendations are clearly editorial advice.
 
@@ -24,10 +24,12 @@ Sequoia and Kings Canyon each add 19 places and three connected suggested trips.
 - Desktop browser checks covered both new maps, direct park links, more/less toggles, keyboard activation, and a Cedar Grove preset warning when the upper estimate exceeds a six-hour day.
 - Phone checks covered Kings Canyon at 390 × 844 and Sequoia at 320 × 740. Each exposed 19 numbered names; there was no horizontal page overflow. Sequoia's actual pin centers remained at least 45 CSS pixels apart, and name buttons were at least 44 pixels high. These are browser checks, not physical-device gesture tests.
 - Existing maps exposed 30/24/20/33 place cards with an initially closed information button on every card. No access notes remained folded in the planned stops. Browser error/warning logs were empty.
+- Follow-up phone check: all 145 actual marker taps showed the correct full name inside their map. At 320 × 740, Yosemite's long Mariposa Grove name fit, keyboard activation retained marker focus, all 33 names remained available in the optional browser, and **View details** closed expanded view and focused the right place. A closed Sequoia cave marker showed its closure warning without scrolling away; the Petrified Forest empty campground filter retained its explanation. No browser warnings/errors were reported.
+- Normal phone maps now fit the available viewport height. A tap brings a partially clipped map fully into view, keeping the map and selected name together. All six normal maps passed this check at 320 × 740 with no horizontal page overflow; Yosemite's 33 pin centers remained at least 45 pixels apart. Desktop selection still opens the existing detailed place section.
 
 ### One honest weakness per park
 
-- **Joshua Tree:** a small whole-park overview needs the numbered list to identify crowded places.
+- **Joshua Tree:** a small overview cannot show every full name simultaneously; a tap identifies a crowded place without needing the number list.
 - **Death Valley:** remote-road travel allowances cannot predict damage, weather, or an unsuitable vehicle.
 - **Petrified Forest:** simplified Blue Mesa road geometry cannot provide navigation or accurate distances.
 - **Yosemite:** parking and shuttle queues can exceed the static allowances.
